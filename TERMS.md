@@ -1,25 +1,29 @@
-# Terms of Service — TokenTracker
+# Terms of Use — TokenTracker
 
 _Last updated: May 2026_
 
-## 1. Usage
+## 1. About
 
-TokenTracker is a personal, open-source macOS utility for tracking Claude AI usage. It is provided free of charge, as-is, without warranty of any kind.
+TokenTracker is a free, open-source macOS utility for monitoring Claude AI usage. It is not affiliated with or endorsed by Anthropic.
 
-## 2. Data & Privacy
+## 2. Use at your own risk
 
-- TokenTracker does **not** collect, transmit, or store any personal data on external servers.
-- All data (usage logs, session tokens, org IDs) remains on your local machine.
-- Your session token is stored in your macOS Keychain and is used solely to fetch rate limit information from the Claude API.
+The software is provided **"as is"**, without warranty of any kind, express or implied. The authors are not liable for any damages, data loss, account issues, or API access changes arising from use of this software.
 
-## 3. Claude API
+## 3. Privacy & data
 
-TokenTracker accesses the Claude API on your behalf using your credentials. You are responsible for complying with Anthropic's [Terms of Service](https://www.anthropic.com/legal/consumer-terms).
+- TokenTracker does **not** collect, transmit, or store your data on any external server.
+- All processing happens locally on your Mac.
+- Your session token is stored in macOS Keychain. Your org ID is stored in `UserDefaults`. Neither is transmitted anywhere except directly to `api2.claude.ai` to fetch your own rate limit data.
 
-## 4. Disclaimer
+## 4. Anthropic's terms
 
-The app is provided "as is". The authors are not liable for any damages arising from its use, including but not limited to data loss, account suspension, or API access revocation.
+By using TokenTracker, you remain responsible for complying with [Anthropic's Terms of Service](https://www.anthropic.com/legal/consumer-terms). TokenTracker accesses the Claude API on your behalf using your own credentials.
 
-## 5. Open Source
+## 5. Open source
 
-TokenTracker is open source under the MIT License. Source code is available at [github.com/bvsmma/TokenTracker](https://github.com/bvsmma/TokenTracker).
+TokenTracker is released under the [MIT License](LICENSE). You are free to use, modify, and distribute it under those terms.
+
+## 6. Changes
+
+These terms may be updated at any time. Continued use of the software constitutes acceptance of any revised terms.
