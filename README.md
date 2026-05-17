@@ -10,9 +10,17 @@
 ---
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" width="280" alt="Dashboard" />
-  &nbsp;&nbsp;
-  <img src="docs/screenshots/history.png" width="280" alt="History" />
+  <img src="docs/screenshots/dashboard.png" width="240" alt="Dashboard" />
+  &nbsp;
+  <img src="docs/screenshots/history.png" width="240" alt="History" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/widget_large.png" width="240" alt="Large widget" />
+  &nbsp;
+  <img src="docs/screenshots/widget_medium.png" width="240" alt="Medium widget" />
+  &nbsp;
+  <img src="docs/screenshots/widget_small.png" width="120" alt="Small widget" />
 </p>
 
 ---
