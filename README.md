@@ -1,11 +1,11 @@
 # TokenTracker
 
+> Нативное macOS-приложение для отслеживания использования Claude AI в реальном времени.  
 > Native macOS app for tracking Claude AI usage, costs, and rate limits in real time.
 
 ![macOS](https://img.shields.io/badge/macOS_26+-000000?style=flat&logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift_6-F05138?style=flat&logo=swift&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=flat)
 
 ---
 
@@ -25,30 +25,56 @@
 
 ---
 
-## What it does
+## О проекте / About
 
-TokenTracker sits in your menu bar and tracks:
+**RU:** TokenTracker показывает ваши лимиты Claude (5-часовой и недельный), стоимость и количество токенов за день, историю расходов и виджеты на рабочем столе. Без облака, без телеметрии — всё работает локально.
 
-- **Rate limits** — 5-hour and weekly Claude limits, updated every 60 seconds
-- **Daily usage** — tokens consumed, cost in USD, active sessions
-- **History** — 7/30/90-day cost breakdown with CSV export
-- **Widgets** — three WidgetKit sizes (small, medium, large) for your desktop
+**EN:** TokenTracker shows your Claude rate limits (5-hour and weekly), daily token cost and usage, spending history, and desktop widgets. No cloud, no telemetry — everything runs locally.
 
-No cloud, no telemetry. Everything runs locally.
-
----
-
-## Requirements
-
-- macOS 26 (Tahoe) or later
-- Xcode 26+ (to build from source)
-- A Claude.ai account (Pro or Max recommended for rate limit data)
+> 🤖 Этот проект был полностью написан с помощью **Claude Sonnet 4.6** примерно за **12 часов**.  
+> 🤖 This project was built entirely with **Claude Sonnet 4.6** in approximately **12 hours**.  
+> Проект активно развивается / Actively maintained — updates coming.
 
 ---
 
-## Installation
+## Возможности / Features
 
-### Build from source
+| | RU | EN |
+|---|---|---|
+| ⏱ | 5-часовой и недельный лимиты Claude | 5-hour and weekly Claude rate limits |
+| 💰 | Стоимость и токены за сегодня | Daily token cost and usage |
+| 📊 | График активности по часам | Hourly activity chart |
+| 📅 | История за 7 / 30 / 90 дней + CSV | 7 / 30 / 90-day history + CSV export |
+| 🖼 | Виджеты трёх размеров (WidgetKit) | Three widget sizes (WidgetKit) |
+| 🔔 | Уведомления о лимитах и бюджете | Limit and budget notifications |
+| 🌍 | Русский и английский интерфейс | Russian and English UI |
+
+---
+
+## Требования / Requirements
+
+- macOS 26 (Tahoe) или новее / or later
+- Xcode 26+ (для сборки из исходников / to build from source)
+- Аккаунт Claude.ai / A Claude.ai account
+
+---
+
+## Установка / Installation
+
+### Скачать / Download
+
+Скачайте последний релиз → [Releases](../../releases) → `TokenTracker-x.x.x.dmg`
+
+Download the latest release → [Releases](../../releases) → `TokenTracker-x.x.x.dmg`
+
+1. **RU:** Откройте DMG и перетащите TokenTracker в папку Программы  
+   **EN:** Open the DMG and drag TokenTracker to Applications
+2. **RU:** Запустите приложение — оно появится в Dock  
+   **EN:** Launch the app — it will appear in your Dock
+3. **RU:** Виджеты: правая кнопка на рабочем столе → **Изменить виджеты** → TokenTracker  
+   **EN:** Widgets: right-click desktop → **Edit Widgets** → TokenTracker
+
+### Собрать из исходников / Build from source
 
 ```bash
 git clone https://github.com/bvsmma/TokenTracker.git
@@ -56,61 +82,52 @@ cd TokenTracker/TokenTracker
 open TokenTracker.xcodeproj
 ```
 
-1. Select the **TokenTracker** scheme
-2. Set your Development Team in Signing & Capabilities
-3. Build & Run (`Cmd+R`)
-
-### Add widgets
-
-Right-click your desktop → **Edit Widgets** → search **TokenTracker** → choose a size.
+В Xcode: выберите схему **TokenTracker** → укажите свой Development Team → `Cmd+R`  
+In Xcode: select the **TokenTracker** scheme → set your Development Team → `Cmd+R`
 
 ---
 
-## Setup
+## Настройка / Setup
 
-### Claude Code usage (automatic)
+### Данные Claude Code (автоматически / automatic)
 
-TokenTracker reads `~/.claude/projects/**/*.jsonl` directly — no configuration needed. Usage data appears immediately after launch.
+**RU:** Приложение читает `~/.claude/projects/**/*.jsonl` напрямую. Никакой настройки не требуется.  
+**EN:** The app reads `~/.claude/projects/**/*.jsonl` directly. No configuration needed.
 
-### Rate limits (requires login)
+### Лимиты (требуется вход / login required)
 
-To see your 5-hour and weekly limits, log in once:
+**RU:**
+1. Откройте [claude.ai](https://claude.ai) → `Cmd+Option+I` → вкладка **Application**
+2. **Cookies** → **claude.ai** → найдите `sessionKey` → скопируйте значение
+3. Вставьте в приложение (вкладка Аккаунт)
 
-1. Open **Account** tab → the app will prompt you if not logged in
-2. Go to [claude.ai](https://claude.ai) in your browser
-3. Open DevTools (`Cmd+Option+I`) → **Application** → **Cookies** → **claude.ai**
-4. Copy the value of **`sessionKey`**
-5. Paste it into TokenTracker
+**EN:**
+1. Open [claude.ai](https://claude.ai) → `Cmd+Option+I` → **Application** tab
+2. **Cookies** → **claude.ai** → find `sessionKey` → copy the value
+3. Paste it in the app (Account tab)
 
-Your session key is stored encrypted in macOS Keychain.
-
-If the Org ID lookup fails, you'll be prompted to enter it manually:  
-DevTools → **Application** → **Cookies** → **claude.ai** → find **`lastActiveOrg`**.
-
----
-
-## Privacy
-
-- No analytics, no tracking, no external servers
-- The only outbound requests go to `api2.claude.ai` to fetch your own rate limit data
-- Session token stored in macOS Keychain (encrypted)
-- Org ID stored in `UserDefaults` (local)
-- All usage data read from local disk only
+Session token хранится в macOS Keychain / is stored in macOS Keychain.
 
 ---
 
-## Project structure
+## Конфиденциальность / Privacy
+
+**RU:** Никакой аналитики, никаких внешних серверов. Единственные сетевые запросы идут на `api2.claude.ai` — чтобы получить ваши собственные лимиты.  
+**EN:** No analytics, no external servers. The only outbound requests go to `api2.claude.ai` to fetch your own rate limits.
+
+---
+
+## Структура / Project structure
 
 ```
 TokenTracker/
-├── TokenTracker/          # Main app target
-│   ├── Data/              # ClaudeCodeReader, LimitsPoller, SharedStore, etc.
+├── TokenTracker/          # Main app
+│   ├── Data/              # File reader, API poller, storage
 │   ├── Models/            # UsageData
-│   ├── Views/             # SettingsView, LoginView, OnboardingView
-│   ├── AppOrchestrator.swift
-│   ├── NotificationManager.swift
-│   └── L10n.swift         # Russian / English localization
-├── TokenTrackerWidget/    # WidgetKit extension (small, medium, large)
+│   ├── Views/             # SwiftUI views
+│   ├── L10n.swift         # RU / EN localization
+│   └── AppOrchestrator.swift
+├── TokenTrackerWidget/    # WidgetKit extension
 └── TokenTrackerTests/     # Unit tests
 ```
 
@@ -118,10 +135,16 @@ TokenTracker/
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) · [FAQ](FAQ.md) · [Terms](TERMS.md)
 
 ---
 
-## License
+## Лицензия / License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  Built with ❤️ and <a href="https://claude.ai">Claude Sonnet 4.6</a>
+</p>

@@ -2,30 +2,37 @@
 
 ---
 
-### Why is the usage data showing zeros?
+## Почему данные не обновляются? / Why is the data not updating?
 
-TokenTracker reads Claude Code session files from `~/.claude/projects/`. Make sure:
-- You have used Claude Code CLI at least once today
-- The folder `~/.claude/projects/` exists on your Mac
-- If you moved your projects folder, update it in **Settings → Projects folder**
+**RU:** TokenTracker читает файлы Claude Code из `~/.claude/projects/`. Убедитесь, что:
+- Вы использовали Claude Code CLI сегодня
+- Папка `~/.claude/projects/` существует
+- Если вы переместили папку — укажите новый путь в **Настройки → Папка проектов**
+
+**EN:** TokenTracker reads Claude Code files from `~/.claude/projects/`. Make sure:
+- You have used Claude Code CLI today
+- The folder `~/.claude/projects/` exists
+- If you moved the folder — update it in **Settings → Projects folder**
 
 ---
 
-### How do I get my session token?
+## Как получить session token? / How do I get my session token?
 
 **RU:**
 1. Откройте [claude.ai](https://claude.ai) в браузере
 2. Нажмите `Cmd+Option+I` → вкладка **Application**
 3. **Cookies** → **claude.ai** → найдите `sessionKey` → скопируйте значение
+4. Вставьте в поле на экране входа (Cmd+V)
 
 **EN:**
 1. Open [claude.ai](https://claude.ai) in your browser
 2. Press `Cmd+Option+I` → **Application** tab
 3. **Cookies** → **claude.ai** → find `sessionKey` → copy the value
+4. Paste it into the login screen (Cmd+V)
 
 ---
 
-### How do I find my Org ID?
+## Как найти Org ID? / How do I find my Org ID?
 
 **RU:**
 1. Откройте [claude.ai](https://claude.ai) → `Cmd+Option+I`
@@ -39,42 +46,64 @@ TokenTracker reads Claude Code session files from `~/.claude/projects/`. Make su
 
 ---
 
-### What is the 5-hour limit?
+## Что такое 5-часовой лимит? / What is the 5-hour limit?
 
-Claude Pro and Max plans have a rolling usage limit over the last 5 hours. When you reach it, new requests are temporarily blocked until the window resets. TokenTracker shows your current utilization and when the limit resets.
+**RU:** Claude Pro и Max имеют скользящий лимит за последние 5 часов. При достижении лимита новые запросы временно блокируются. TokenTracker показывает текущее использование и время сброса.
 
----
-
-### My limits show "N/A" or stopped updating
-
-Your session token may have expired. Browser session tokens typically last 30 days. To fix it: go to **Account** tab → **Sign out** → log in again with a fresh token.
+**EN:** Claude Pro and Max plans have a rolling usage limit over the last 5 hours. When reached, new requests are temporarily blocked. TokenTracker shows your current utilization and reset time.
 
 ---
 
-### Is my data sent anywhere?
+## Лимиты перестали обновляться / Limits stopped updating
 
-No. TokenTracker works entirely locally. The only outbound requests go to `api2.claude.ai` to fetch your own rate limit data — using your credentials, on your behalf.
+**RU:** Вероятно, истёк session token (живёт ~30 дней). Зайдите в **Аккаунт** → **Выйти** → войдите снова со свежим токеном.
 
----
-
-### How do I change the projects folder?
-
-**Settings** tab → **Projects folder** → **Choose folder…** → select your `~/.claude/projects` directory (or a custom path if you've moved it).
+**EN:** Your session token may have expired (browser tokens last ~30 days). Go to **Account** → **Sign out** → log in again with a fresh token.
 
 ---
 
-### Can I use this without a Claude.ai account?
+## Мои данные куда-то отправляются? / Is my data sent anywhere?
 
-Partially. Token/cost/session data from Claude Code files works without login. Rate limits (5-hour, weekly) require a valid session token from claude.ai.
+**RU:** Нет. Всё работает локально. Единственные сетевые запросы идут на `api2.claude.ai` — чтобы получить ваши собственные лимиты, с вашими учётными данными.
 
----
-
-### How do I add the widget?
-
-Right-click your desktop → **Edit Widgets** → search **TokenTracker** → choose a size (small, medium, or large).
+**EN:** No. Everything runs locally. The only outbound requests go to `api2.claude.ai` to fetch your own rate limits using your credentials.
 
 ---
 
-### The app isn't in the Dock
+## Как поменять папку проектов? / How do I change the projects folder?
 
-Open **Settings** tab — if "Menu bar icon" is the only visible toggle, the app may be set to menu bar mode. The app always appears in the Dock by default. If you closed the window, click the icon in the menu bar or reopen from `/Applications`.
+**RU:** **Настройки** → **Папка проектов** → **Выбрать папку…**
+
+**EN:** **Settings** → **Projects folder** → **Choose folder…**
+
+---
+
+## Можно без аккаунта claude.ai? / Can I use it without a claude.ai account?
+
+**RU:** Частично. Токены, стоимость и сессии из файлов Claude Code работают без входа. Лимиты (5-часовой, недельный) требуют session token.
+
+**EN:** Partially. Token/cost/session data from Claude Code files works without login. Rate limits (5-hour, weekly) require a session token.
+
+---
+
+## Как добавить виджет? / How do I add the widget?
+
+**RU:** Правая кнопка на рабочем столе → **Изменить виджеты** → найдите **TokenTracker** → выберите размер.
+
+**EN:** Right-click your desktop → **Edit Widgets** → search **TokenTracker** → choose a size.
+
+---
+
+## Будут ли обновления? / Will there be updates?
+
+**RU:** Да. Проект активно развивается. Следите за [Releases](../../releases).
+
+**EN:** Yes. The project is actively maintained. Watch [Releases](../../releases) for updates.
+
+---
+
+## Как был создан этот проект? / How was this project built?
+
+**RU:** TokenTracker был полностью написан с помощью **Claude Sonnet 4.6** примерно за **12 часов** — от идеи до опен-сорс релиза.
+
+**EN:** TokenTracker was built entirely with **Claude Sonnet 4.6** in approximately **12 hours** — from idea to open-source release.
