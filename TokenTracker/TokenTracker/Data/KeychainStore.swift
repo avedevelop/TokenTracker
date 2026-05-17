@@ -6,9 +6,6 @@ final class KeychainStore {
     static let account = "sessionKey"
 
     static func save(_ value: String) throws {
-        // Also persist in UserDefaults as fallback (Keychain can prompt on dev rebuilds)
-        UserDefaults.standard.set(value, forKey: "com.tokentracker.sessionKey.backup")
-
         let data = Data(value.utf8)
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
@@ -33,16 +30,13 @@ final class KeychainStore {
             kSecMatchLimit: kSecMatchLimitOne
         ]
         var result: AnyObject?
-        if SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
-           let data = result as? Data,
-           let str = String(data: data, encoding: .utf8) {
-            return str
-        }
-        // Fallback: UserDefaults backup (persists across dev rebuilds)
-        return UserDefaults.standard.string(forKey: "com.tokentracker.sessionKey.backup")
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+              let data = result as? Data else { return nil }
+        return String(data: data, encoding: .utf8)
     }
 
     static func delete() {
+        // Clean up any legacy plaintext backup from older versions
         UserDefaults.standard.removeObject(forKey: "com.tokentracker.sessionKey.backup")
         let query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
