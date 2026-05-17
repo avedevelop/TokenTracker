@@ -23,10 +23,18 @@ struct TokenTrackerApp: App {
 
 // MARK: - AppDelegate
 
+class WindowDelegate: NSObject, NSWindowDelegate {
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        sender.orderOut(nil)
+        return false
+    }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem!
     var popover: NSPopover!
     var mainWindow: NSWindow?
+    private let windowDelegate = WindowDelegate()
     let orchestrator = AppOrchestrator()
     private var cancellable: AnyCancellable?
 
@@ -69,11 +77,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             win.contentViewController = hostingController
             win.setContentSize(NSSize(width: 340, height: 580))
             win.center()
-
-            // Clear reference when window is closed so it can be recreated
-            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: win, queue: .main) { [weak self] _ in
-                self?.mainWindow = nil
-            }
+            win.delegate = windowDelegate
             mainWindow = win
         }
         mainWindow?.makeKeyAndOrderFront(nil)
@@ -86,6 +90,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        orchestrator.stop()
+    }
 
     // MARK: Status Item (optional menu bar icon)
 

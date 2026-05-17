@@ -4,6 +4,15 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.0.1 — May 2026
+
+### Fixed
+- Crash on window close (X button) on macOS 26 Tahoe — window now hides instead of deallocating, eliminating race with `_NSWindowTransformAnimation`
+- Sync button spinner replaced with native `ProgressView` — previous rotation animation caused visual glitches
+- App cleanup on quit: timer, FSWatcher and local server now stop cleanly via `applicationWillTerminate`
+
+---
+
 ## v1.0.0 — May 2026
 
 Initial public release.

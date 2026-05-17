@@ -80,6 +80,14 @@ final class AppOrchestrator: ObservableObject {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    func stop() {
+        limitsTimer?.invalidate()
+        limitsTimer = nil
+        fsWatcher?.stop()
+        fsWatcher = nil
+        server.stop()
+    }
+
     // MARK: - Private
 
     private func startFSWatcher() {

@@ -85,14 +85,14 @@ struct SettingsView: View {
             Spacer()
             Button { sync() } label: {
                 HStack(spacing: 5) {
-                    Image(systemName: "arrow.clockwise")
-                        .rotationEffect(.degrees(isSyncing ? 360 : 0))
-                        .animation(
-                            isSyncing
-                                ? .linear(duration: 1).repeatForever(autoreverses: false)
-                                : .default,
-                            value: isSyncing
-                        )
+                    if isSyncing {
+                        ProgressView()
+                            .progressViewStyle(.circular)
+                            .scaleEffect(0.55)
+                            .frame(width: 12, height: 12)
+                    } else {
+                        Image(systemName: "arrow.clockwise")
+                    }
                     Text(isSyncing ? L10n.syncing : L10n.sync)
                 }
                 .font(.system(size: 11, weight: .medium))

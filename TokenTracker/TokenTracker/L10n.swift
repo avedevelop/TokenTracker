@@ -66,7 +66,7 @@ enum L10n {
         s(
             "Отслеживание использования Claude AI в реальном времени",
             "Real-time Claude AI usage tracker"
-        )
+        )   
     }
 
     // MARK: - Reset label helpers
