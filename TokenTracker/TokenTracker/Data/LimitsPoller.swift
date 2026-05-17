@@ -83,13 +83,13 @@ final class LimitsPoller {
                 .trimmingCharacters(in: .whitespacesAndNewlines),
               !safeKey.isEmpty else { return nil }
 
-        // Convert hex to Data
+        // Convert hex to Data (skip trailing nibble if odd length)
         var encData = Data()
-        var idx = hexStr.startIndex
-        while idx < hexStr.endIndex {
-            let next = hexStr.index(idx, offsetBy: 2, limitedBy: hexStr.endIndex) ?? hexStr.endIndex
-            if let byte = UInt8(hexStr[idx..<next], radix: 16) { encData.append(byte) }
-            idx = next
+        let chars = Array(hexStr)
+        var i = 0
+        while i + 1 < chars.count {
+            if let byte = UInt8(String(chars[i...i+1]), radix: 16) { encData.append(byte) }
+            i += 2
         }
         guard encData.count > 3 else { return nil }
         encData = encData.dropFirst(3) // Remove v10 prefix

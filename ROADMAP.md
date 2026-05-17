@@ -5,23 +5,22 @@
 
 ---
 
-## Near-term / Ближайшее
+## Recently shipped / Недавно выпущено
 
-- **Auto-update (Sparkle)** — in-app update notifications and one-click install when a new release is available  
-  Уведомления об обновлениях и установка в один клик прямо из приложения
-
-- **Global hotkey / Глобальная горячая клавиша** — system-wide shortcut to show/hide the window without clicking the Dock  
-  Системный шорткат для открытия/скрытия окна без клика в Dock
-
-- **Per-project breakdown / Разбивка по проектам** — top projects by cost and tokens on the dashboard, grouped by Claude Code project folder  
-  Топ проектов по расходу и токенам на дашборде, сгруппированных по папкам Claude Code
-
-- **Bind local server to 127.0.0.1** — explicit localhost-only binding for the widget data server  
-  Явная привязка сервера данных виджета только к localhost
+- ✅ **Per-project breakdown / Разбивка по проектам** — top-5 projects by tokens and cost on the dashboard  
+  Топ-5 проектов по токенам и стоимости на дашборде *(v1.1.0)*
+- ✅ **Check for updates / Проверка обновлений** — button in About + banner on launch when a new version is available  
+  Кнопка в разделе «О приложении» + баннер при запуске если вышла новая версия *(v1.1.0)*
+- ✅ **Localhost-only widget server / Сервер виджета только на localhost** — widget data server now rejects non-localhost connections  
+  Сервер данных виджета теперь отклоняет внешние подключения *(v1.1.0)*
+- ✅ **Window close crash fix / Исправление краша при закрытии** — window hides instead of deallocating, fixes crash on macOS 26 Tahoe  
+  Окно скрывается вместо деалокации, исправлен краш на macOS 26 Tahoe *(v1.0.1)*
+- ✅ **Session token security / Безопасность токена сессии** — credentials stored in Keychain only, removed plaintext UserDefaults backup  
+  Токен хранится только в Keychain, убрана незашифрованная копия в UserDefaults *(v1.0.2)*
 
 ---
 
-## Medium-term / Среднесрочное
+## Next / Следующее
 
 - **Monthly budget / Месячный бюджет** — monthly spending limit with progress bar and alerts at 80% / 100%  
   Месячный лимит расходов с прогресс-баром и уведомлениями при 80% / 100%

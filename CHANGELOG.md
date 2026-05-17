@@ -4,6 +4,18 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.1.0 — May 2026
+
+### New features
+- **Per-project breakdown** — dashboard now shows top-5 projects by token usage today with relative bars and cost
+- **Check for updates** — button in About tab queries GitHub Releases API; banner appears automatically on launch if a new version is available
+- **Global hotkey** — `⌘⇧Space` shows/hides the window from anywhere on the system
+
+### Improved
+- Local widget data server now rejects connections from non-localhost addresses
+
+---
+
 ## v1.0.2 — May 2026
 
 ### Security

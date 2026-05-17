@@ -47,6 +47,7 @@ final class SharedStore {
         stored.sessionsToday = newData.sessionsToday
         stored.cacheHitRate = newData.cacheHitRate
         stored.hourlyUsage = newData.hourlyUsage
+        stored.topProjects = newData.topProjects
         stored.tokensUpdatedAt = Date()
         try write(stored)
         WidgetCenter.shared.reloadAllTimelines()

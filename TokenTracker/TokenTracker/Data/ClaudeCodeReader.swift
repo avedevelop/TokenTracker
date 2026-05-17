@@ -72,27 +72,45 @@ final class ClaudeCodeReader {
         var totalCacheRead = 0
         var sessions = Set<String>()
         var hourlyUsage = Array(repeating: 0, count: 24)
+        var projectTokens: [String: Int] = [:]
+        var projectCost: [String: Double] = [:]
 
-        for fileURL in jsonlFiles(in: projectsDir) {
-            guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
-            for line in content.components(separatedBy: "\n") where !line.isEmpty {
-                guard let data = line.data(using: .utf8),
-                      let entry = try? JSONDecoder().decode(ClaudeEntry.self, from: data),
-                      entry.type == "assistant",
-                      let usage = entry.message?.usage,
-                      let tsStr = entry.timestamp,
-                      let date = parseISO8601(tsStr),
-                      date >= startOfDay
-                else { continue }
+        let projectDirs = (try? FileManager.default.contentsOfDirectory(
+            at: projectsDir, includingPropertiesForKeys: [.isDirectoryKey], options: .skipsHiddenFiles
+        ))?.filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true } ?? []
 
-                let hour = calendar.component(.hour, from: date)
-                hourlyUsage[hour] += usage.inputTokens + usage.outputTokens
+        for projectDir in projectDirs {
+            let projectName = friendlyProjectName(projectDir.lastPathComponent)
+            for fileURL in jsonlFiles(in: projectDir) {
+                guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
+                for line in content.components(separatedBy: "\n") where !line.isEmpty {
+                    guard let data = line.data(using: .utf8),
+                          let entry = try? JSONDecoder().decode(ClaudeEntry.self, from: data),
+                          entry.type == "assistant",
+                          let usage = entry.message?.usage,
+                          let tsStr = entry.timestamp,
+                          let date = parseISO8601(tsStr),
+                          date >= startOfDay
+                    else { continue }
 
-                if let sid = entry.sessionId { sessions.insert(sid) }
-                totalInput       += usage.inputTokens
-                totalOutput      += usage.outputTokens
-                totalCacheCreate += usage.cacheCreationInputTokens
-                totalCacheRead   += usage.cacheReadInputTokens
+                    let tokens = usage.inputTokens + usage.outputTokens
+                    let entryCost = Double(usage.inputTokens) * inputPrice
+                                  + Double(usage.outputTokens) * outputPrice
+                                  + Double(usage.cacheCreationInputTokens) * cacheCreatePx
+                                  + Double(usage.cacheReadInputTokens) * cacheReadPx
+
+                    let hour = calendar.component(.hour, from: date)
+                    hourlyUsage[hour] += tokens
+                    if let sid = entry.sessionId { sessions.insert(sid) }
+
+                    totalInput       += usage.inputTokens
+                    totalOutput      += usage.outputTokens
+                    totalCacheCreate += usage.cacheCreationInputTokens
+                    totalCacheRead   += usage.cacheReadInputTokens
+
+                    projectTokens[projectName, default: 0] += tokens
+                    projectCost[projectName, default: 0]   += entryCost
+                }
             }
         }
 
@@ -104,14 +122,29 @@ final class ClaudeCodeReader {
         let cacheHitDenominator = totalInput + totalOutput + totalCacheRead
         let cacheHit = cacheHitDenominator > 0 ? Double(totalCacheRead) / Double(cacheHitDenominator) : 0
 
+        let topProjects = projectTokens
+            .map { ProjectUsage(name: $0.key, tokens: $0.value, cost: projectCost[$0.key] ?? 0) }
+            .filter { $0.tokens > 0 }
+            .sorted { $0.tokens > $1.tokens }
+            .prefix(5)
+            .map { $0 }
+
         var result = UsageData.empty
         result.tokensToday    = totalInput + totalOutput
         result.costToday      = cost
         result.sessionsToday  = sessions.count
         result.cacheHitRate   = cacheHit
         result.hourlyUsage    = hourlyUsage
+        result.topProjects    = topProjects
         result.tokensUpdatedAt = Date()
         return result
+    }
+
+    private static func friendlyProjectName(_ folderName: String) -> String {
+        // ~/.claude/projects stores folder names as path-with-dashes, e.g. "-Users-vlad-dev-my-project"
+        // Extract the last meaningful path component
+        let parts = folderName.split(separator: "-").map(String.init).filter { !$0.isEmpty }
+        return parts.last ?? folderName
     }
 
     private static func jsonlFiles(in dir: URL) -> [URL] {

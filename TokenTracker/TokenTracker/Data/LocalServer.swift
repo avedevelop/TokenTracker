@@ -9,6 +9,12 @@ final class LocalServer {
         do {
             listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: LocalServer.port)!)
             listener?.newConnectionHandler = { [weak self] conn in
+                if case .hostPort(let host, _) = conn.endpoint {
+                    let h = "\(host)"
+                    guard h == "127.0.0.1" || h == "::1" || h.hasPrefix("127.") else {
+                        conn.cancel(); return
+                    }
+                }
                 self?.handle(conn)
             }
             listener?.stateUpdateHandler = { _ in }
