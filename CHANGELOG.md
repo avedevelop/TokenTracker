@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.0.2 — May 2026
+
+### Security
+- Session token no longer stored as plaintext in `~/Library/Preferences` — Keychain only
+
+---
+
 ## v1.0.1 — May 2026
 
 ### Fixed
