@@ -1,0 +1,9 @@
+.claude/
+docs/superpowers/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+.DS_Store
+image.png
+test_glass
+.superpowers/
