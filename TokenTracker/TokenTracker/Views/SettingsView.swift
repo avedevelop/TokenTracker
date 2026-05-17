@@ -9,6 +9,7 @@ private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
 struct SettingsView: View {
     @EnvironmentObject var orchestrator: AppOrchestrator
     @State private var isSyncing = false
+    @State private var noUpdateToast = false
     @State private var activeTab: AppTab = .dashboard
     @State private var now = Date()
     @State private var exportedCSV = false
@@ -147,6 +148,7 @@ struct SettingsView: View {
             limitsSection
             statsSection
             chartSection
+            projectsSection
         }
     }
 
@@ -241,6 +243,45 @@ struct SettingsView: View {
                     }
                     .font(.system(size: 9))
                     .foregroundStyle(.white.opacity(0.2))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var projectsSection: some View {
+        let projects = orchestrator.usage.topProjects
+        if !projects.isEmpty {
+            DarkCard {
+                VStack(spacing: 0) {
+                    cardHeader(L10n.s("Проекты сегодня", "Projects today"), updated: nil)
+                    VStack(spacing: 8) {
+                        let maxTokens = projects.first?.tokens ?? 1
+                        ForEach(projects) { project in
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(project.name)
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.white.opacity(0.7))
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                    Spacer()
+                                    Text("$\(String(format: "%.4f", project.cost))")
+                                        .font(.system(size: 11, design: .monospaced))
+                                        .foregroundStyle(.white.opacity(0.35))
+                                }
+                                GeometryReader { geo in
+                                    ZStack(alignment: .leading) {
+                                        RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.06))
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .fill(.white.opacity(0.4))
+                                            .frame(width: geo.size.width * CGFloat(project.tokens) / CGFloat(maxTokens))
+                                    }
+                                }
+                                .frame(height: 3)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -537,6 +578,28 @@ struct SettingsView: View {
                         .foregroundStyle(.white.opacity(0.3))
                 }
 
+                // Update banner
+                if let ver = orchestrator.updateAvailable, let url = orchestrator.updateReleaseURL {
+                    Button { NSWorkspace.shared.open(url) } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .foregroundStyle(.green)
+                            Text(L10n.s("Доступно обновление \(ver)", "Update available \(ver)"))
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.green)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.green.opacity(0.6))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.green.opacity(0.2), lineWidth: 0.5))
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Divider().background(.white.opacity(0.06))
 
                 // Compact stats
@@ -561,9 +624,51 @@ struct SettingsView: View {
                         linkChip(L10n.s("Условия", "Terms"), icon: "doc.text",
                                  url: "https://github.com/bvsmma/TokenTracker/blob/main/TERMS.md")
                     }
+                    checkUpdatesButton
                 }
             }
         }
+    }
+
+    @State private var isCheckingUpdate = false
+
+    private var checkUpdatesButton: some View {
+        Button {
+            isCheckingUpdate = true
+            Task {
+                let start = Date()
+                await orchestrator.checkForUpdates()
+                // Минимум 1.2с чтобы спиннер был заметен
+                let elapsed = Date().timeIntervalSince(start)
+                if elapsed < 1.2 { try? await Task.sleep(nanoseconds: UInt64((1.2 - elapsed) * 1_000_000_000)) }
+                isCheckingUpdate = false
+                if orchestrator.updateAvailable == nil {
+                    noUpdateToast = true
+                    try? await Task.sleep(nanoseconds: 2_500_000_000)
+                    noUpdateToast = false
+                }
+            }
+        } label: {
+            HStack(spacing: 5) {
+                if isCheckingUpdate {
+                    ProgressView().progressViewStyle(.circular).scaleEffect(0.55).frame(width: 12, height: 12)
+                } else {
+                    Image(systemName: noUpdateToast ? "checkmark" : "arrow.clockwise")
+                        .font(.system(size: 11))
+                }
+                Text(noUpdateToast
+                     ? L10n.s("Уже актуальная версия", "Already up to date")
+                     : L10n.s("Проверить обновления", "Check for updates"))
+                    .font(.system(size: 11, weight: .medium))
+            }
+            .foregroundStyle(.white.opacity(0.55))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 9))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.08), lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
+        .disabled(isCheckingUpdate)
     }
 
     private func linkChip(_ label: String, icon: String, url: String) -> some View {

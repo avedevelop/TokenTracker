@@ -83,9 +83,8 @@ final class NotificationManager {
         body: String
     ) {
         guard currentValue >= threshold else {
-            // Value dropped below threshold — reset last-notified so we fire again next time
-            let last = UserDefaults.standard.double(forKey: lastKey)
-            if last > 0 && currentValue < threshold * 0.9 {
+            // Value dropped below threshold — reset so we fire again on next crossing
+            if UserDefaults.standard.double(forKey: lastKey) > 0 {
                 UserDefaults.standard.set(0.0, forKey: lastKey)
             }
             return

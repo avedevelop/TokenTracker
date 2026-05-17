@@ -8,6 +8,8 @@ final class AppOrchestrator: ObservableObject {
     @Published var tokenExpired: Bool = false
     @Published var fiveHourUtilization: Double = 0
     @Published var usage: UsageData = SharedStore.read()
+    @Published var updateAvailable: String? = nil
+    @Published var updateReleaseURL: URL? = nil
 
     private var fsWatcher: FSWatcher?
     private var limitsTimer: Timer?
@@ -18,6 +20,7 @@ final class AppOrchestrator: ObservableObject {
         isLoggedIn = KeychainStore.load() != nil
         startFSWatcher()
         refreshTokenUsage()
+        Task { await checkForUpdates() }
         Task { await NotificationManager.shared.requestPermission() }
         if isLoggedIn {
             startLimitsPolling()
@@ -78,6 +81,14 @@ final class AppOrchestrator: ObservableObject {
         try? SharedStore.write(stored)
         usage = stored
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    func checkForUpdates() async {
+        let checker = UpdateChecker.shared
+        if await checker.check() {
+            updateAvailable = checker.availableVersion
+            updateReleaseURL = checker.releaseURL
+        }
     }
 
     func stop() {

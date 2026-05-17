@@ -19,6 +19,15 @@ enum AIProvider: String, Codable, CaseIterable {
     var shortName: String { rawValue }
 }
 
+// MARK: - ProjectUsage
+
+struct ProjectUsage: Codable, Equatable, Identifiable {
+    var id: String { name }
+    var name: String
+    var tokens: Int
+    var cost: Double
+}
+
 // MARK: - UsageData
 
 struct UsageData: Codable, Equatable {
@@ -31,6 +40,7 @@ struct UsageData: Codable, Equatable {
     var hourlyUsage: [Int]
     var limitsUpdatedAt: Date?
     var tokensUpdatedAt: Date?
+    var topProjects: [ProjectUsage]
 
     struct Limits: Codable, Equatable {
         // Five-hour message limit
@@ -62,7 +72,8 @@ struct UsageData: Codable, Equatable {
         limits: nil,
         hourlyUsage: Array(repeating: 0, count: 24),
         limitsUpdatedAt: nil,
-        tokensUpdatedAt: nil
+        tokensUpdatedAt: nil,
+        topProjects: []
     )
 
     static let preview = UsageData(
@@ -83,6 +94,11 @@ struct UsageData: Codable, Equatable {
         ),
         hourlyUsage: [0,0,0,0,0,0,8,15,30,55,80,100,70,43,58,33,18,5,0,0,0,0,0,0],
         limitsUpdatedAt: .now,
-        tokensUpdatedAt: .now
+        tokensUpdatedAt: .now,
+        topProjects: [
+            ProjectUsage(name: "usage-tracker", tokens: 68_000, cost: 1.24),
+            ProjectUsage(name: "my-app", tokens: 41_000, cost: 0.78),
+            ProjectUsage(name: "scripts", tokens: 18_482, cost: 0.32)
+        ]
     )
 }
