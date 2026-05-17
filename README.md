@@ -9,6 +9,14 @@
 
 ---
 
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" width="280" alt="Dashboard" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/history.png" width="280" alt="History" />
+</p>
+
+---
+
 ## What it does
 
 TokenTracker sits in your menu bar and tracks:
