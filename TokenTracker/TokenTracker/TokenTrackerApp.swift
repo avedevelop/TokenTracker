@@ -1,6 +1,7 @@
 import SwiftUI
 import Combine
 import AppKit
+import Sparkle
 
 @main
 struct TokenTrackerApp: App {
@@ -37,6 +38,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let windowDelegate = WindowDelegate()
     let orchestrator = AppOrchestrator()
     private var cancellable: AnyCancellable?
+    private var updaterController: SPUStandardUpdaterController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Single-instance enforcement: if another copy is already running, bring it to front and exit
@@ -52,6 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSApplication.shared.setActivationPolicy(.regular)
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
         setupStatusItem()
         orchestrator.start()
         Task { await NotificationManager.shared.requestPermission() }
@@ -147,8 +150,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Menus
 
+    @objc func checkForUpdatesMenu() {
+        updaterController?.checkForUpdates(nil)
+    }
+
     func cleanupMenus() {
         guard let menu = NSApplication.shared.mainMenu else { return }
+        // Add "Check for Updates…" to the app menu
+        if let appMenu = menu.items.first?.submenu {
+            let sep = NSMenuItem.separator()
+            let updateItem = NSMenuItem(title: "Check for Updates…", action: #selector(checkForUpdatesMenu), keyEquivalent: "u")
+            updateItem.target = self
+            if appMenu.items.first(where: { $0.title.contains("Updates") }) == nil {
+                appMenu.insertItem(sep, at: 1)
+                appMenu.insertItem(updateItem, at: 1)
+            }
+        }
         let keepTitles = ["TokenTracker", "Window"]
         for item in menu.items where !keepTitles.contains(item.title) {
             menu.removeItem(item)

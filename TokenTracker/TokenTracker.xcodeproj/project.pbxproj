@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		87EB9BBC2FBB9765004244B6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 87EB9BBB2FBB9765004244B6 /* Sparkle */; };
 		87FAF5502FB8CA49008298BD /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87FAF54F2FB8CA49008298BD /* WidgetKit.framework */; };
 		87FAF5522FB8CA49008298BD /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 87FAF5512FB8CA49008298BD /* SwiftUI.framework */; };
 		87FAF55D2FB8CA4B008298BD /* TokenTrackerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 87FAF54D2FB8CA49008298BD /* TokenTrackerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -93,6 +94,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				87EB9BBC2FBB9765004244B6 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -189,6 +191,7 @@
 			);
 			name = TokenTracker;
 			packageProductDependencies = (
+				87EB9BBB2FBB9765004244B6 /* Sparkle */,
 			);
 			productName = TokenTracker;
 			productReference = 87FAF53B2FB8C9AA008298BD /* TokenTracker.app */;
@@ -270,6 +273,9 @@
 			);
 			mainGroup = 87FAF5322FB8C9AA008298BD;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				87EB9BBA2FBB9765004244B6 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 87FAF53C2FB8C9AA008298BD /* Products */;
 			projectDirPath = "";
@@ -492,6 +498,8 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/bvsmma/TokenTracker/main/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "6XX7hOUdXUl0Q36AZRGrE2NTwCByev1eBN0W80TwVJI=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -534,6 +542,8 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/bvsmma/TokenTracker/main/appcast.xml";
+				INFOPLIST_KEY_SUPublicEDKey = "6XX7hOUdXUl0Q36AZRGrE2NTwCByev1eBN0W80TwVJI=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -716,6 +726,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		87EB9BBA2FBB9765004244B6 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		87EB9BBB2FBB9765004244B6 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 87EB9BBA2FBB9765004244B6 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 87FAF5332FB8C9AA008298BD /* Project object */;
 }
