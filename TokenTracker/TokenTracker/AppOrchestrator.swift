@@ -10,6 +10,7 @@ final class AppOrchestrator: ObservableObject {
     @Published var usage: UsageData = SharedStore.read()
     @Published var updateAvailable: String? = nil
     @Published var updateReleaseURL: URL? = nil
+    @Published var justUpdatedFrom: String? = nil   // set on first launch after auto-update
 
     private var fsWatcher: FSWatcher?
     private var limitsTimer: Timer?
@@ -17,6 +18,7 @@ final class AppOrchestrator: ObservableObject {
 
     func start() {
         server.start()
+        checkIfJustUpdated()
         isLoggedIn = AccountStore.shared.activeToken() != nil
         // Ensure UserDefaults orgId matches the active profile's orgId on every launch
         if let orgId = AccountStore.shared.activeProfile?.orgId, !orgId.isEmpty {
@@ -134,6 +136,18 @@ final class AppOrchestrator: ObservableObject {
             updateReleaseURL = checker.releaseURL
         }
     }
+
+    private func checkIfJustUpdated() {
+        let key = "com.tokentracker.previousVersion"
+        guard let prev = UserDefaults.standard.string(forKey: key), !prev.isEmpty else { return }
+        let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        if prev != current {
+            justUpdatedFrom = prev
+        }
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+
+    func dismissUpdateBanner() { justUpdatedFrom = nil }
 
     func stop() {
         limitsTimer?.invalidate()

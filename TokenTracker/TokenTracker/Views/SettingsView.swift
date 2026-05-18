@@ -808,6 +808,35 @@ struct SettingsView: View {
                 }
 
                 // Update banner
+                // "Just updated" success banner
+                if let prev = orchestrator.justUpdatedFrom {
+                    let current = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.system(size: 14))
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(L10n.s("Обновление установлено", "Update installed"))
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.green)
+                            Text(L10n.s("v\(prev) → v\(current)", "v\(prev) → v\(current)"))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.green.opacity(0.7))
+                        }
+                        Spacer()
+                        Button { orchestrator.dismissUpdateBanner() } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.green.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.green.opacity(0.15), lineWidth: 0.5))
+                }
+
+                // Update available banner
                 if let ver = orchestrator.updateAvailable {
                     let checker = UpdateChecker.shared
                     VStack(spacing: 6) {
@@ -818,11 +847,16 @@ struct SettingsView: View {
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(.green)
                             Spacer()
-                            Button {
-                                checker.downloadAndOpen()
-                            } label: {
+                            Button { checker.downloadAndOpen() } label: {
                                 Group {
-                                    if checker.isDownloading {
+                                    if checker.isInstalling {
+                                        HStack(spacing: 4) {
+                                            ProgressView().controlSize(.mini).tint(.green)
+                                            Text(L10n.s("Установка…", "Installing…"))
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.green.opacity(0.8))
+                                        }
+                                    } else if checker.isDownloading {
                                         HStack(spacing: 4) {
                                             ProgressView().controlSize(.mini).tint(.green)
                                             Text("\(Int(checker.downloadProgress * 100))%")
@@ -830,7 +864,7 @@ struct SettingsView: View {
                                                 .foregroundStyle(.green.opacity(0.7))
                                         }
                                     } else {
-                                        Text(L10n.s("Скачать", "Download"))
+                                        Text(L10n.s("Установить", "Install"))
                                             .font(.system(size: 10, weight: .semibold))
                                             .foregroundStyle(.green)
                                     }
@@ -839,7 +873,7 @@ struct SettingsView: View {
                                 .background(.green.opacity(0.15), in: Capsule())
                             }
                             .buttonStyle(.plain)
-                            .disabled(checker.isDownloading)
+                            .disabled(checker.isDownloading || checker.isInstalling)
                         }
                         if checker.isDownloading {
                             GeometryReader { geo in
@@ -852,8 +886,7 @@ struct SettingsView: View {
                             .frame(height: 3)
                         }
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10).padding(.vertical, 8)
                     .background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
                     .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.green.opacity(0.15), lineWidth: 0.5))
                 }
