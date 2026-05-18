@@ -110,7 +110,11 @@ sed -i '' 's/MARKETING_VERSION = X.X.X;/MARKETING_VERSION = Y.Y.Y;/g' TokenTrack
 # 2. Release build
 xcodebuild -scheme TokenTracker -configuration Release build
 
-# 3. Create DMG
+# 3. Re-sign Sparkle with ad-hoc (REQUIRED — Sparkle ships with its own Team ID which macOS rejects for unsigned apps)
+codesign --force --deep --sign - DerivedData/.../Release/TokenTracker.app/Contents/Frameworks/Sparkle.framework
+codesign --force --sign - DerivedData/.../Release/TokenTracker.app
+
+# 4. Create DMG
 STAGING=/tmp/tt-dmg && rm -rf $STAGING && mkdir $STAGING
 cp -R ~/Library/Developer/Xcode/DerivedData/TokenTracker-*/Build/Products/Release/TokenTracker.app $STAGING/
 ln -s /Applications $STAGING/Applications
