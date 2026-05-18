@@ -69,6 +69,11 @@ brew tap bvsmma/tap
 brew install --cask tokentracker
 ```
 
+Обновление / Update:
+```bash
+brew upgrade --cask tokentracker
+```
+
 > **RU:** При первом запуске macOS может показать предупреждение — правой кнопкой на иконке → Открыть.  
 > **EN:** On first launch macOS may show a warning — right-click the icon → Open.
 
