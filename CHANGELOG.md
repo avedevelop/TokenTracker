@@ -4,6 +4,14 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.2 — May 2026
+
+### Improved
+- Update button now shows **"Установка…"** state while the new app is being copied and relaunched (previously showed nothing after download)
+- After a successful auto-update, the first launch shows a green **"Обновление установлено v1.3.1 → v1.3.2"** banner in Settings → About
+
+---
+
 ## v1.3.1 — May 2026
 
 ### Fixed

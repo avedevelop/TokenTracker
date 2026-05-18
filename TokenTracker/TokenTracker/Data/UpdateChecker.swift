@@ -13,6 +13,7 @@ final class UpdateChecker {
     private(set) var dmgURL: URL?
 
     @Published var isDownloading = false
+    @Published var isInstalling = false
     @Published var downloadProgress: Double = 0
 
     func check() async -> Bool {
@@ -80,6 +81,7 @@ final class UpdateChecker {
                 try? FileManager.default.removeItem(at: dest)
                 try? FileManager.default.moveItem(at: tmpURL, to: dest)
 
+                self.isInstalling = true
                 self.installFromDMG(at: dest)
             }
         }
@@ -137,6 +139,10 @@ final class UpdateChecker {
 
         try? script.write(toFile: scriptPath, atomically: true, encoding: .utf8)
         try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: scriptPath)
+
+        // Remember current version so new launch can show "Updated to vX.X.X"
+        let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        UserDefaults.standard.set(currentVersion, forKey: "com.tokentracker.previousVersion")
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
