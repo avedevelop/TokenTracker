@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **TokenTracker** — native macOS app (Swift/SwiftUI) that tracks Claude AI token usage, costs, and rate limits in real time. No cloud dependency; everything runs locally.
 
 - GitHub: `github.com/bvsmma/TokenTracker`
-- Current version: **1.2.1**
+- Current version: **1.3.0**
 - Requires macOS 26 (Tahoe)+, no Apple Developer account (ad-hoc signed)
 - Distribution: Homebrew tap (`bvsmma/homebrew-tap`) + GitHub Releases DMG + Sparkle auto-updates
 

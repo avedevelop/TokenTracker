@@ -7,6 +7,20 @@
     <language>en</language>
 
     <item>
+      <title>Version 1.3.0</title>
+      <pubDate>Sun, 18 May 2026 21:00:00 +0000</pubDate>
+      <sparkle:version>1.3.0</sparkle:version>
+      <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/bvsmma/TokenTracker/releases/tag/v1.3.0</sparkle:releaseNotesLink>
+      <enclosure
+        url="https://github.com/bvsmma/TokenTracker/releases/download/v1.3.0/TokenTracker-1.3.0.dmg"
+        sparkle:edSignature="87UbLQoSLtYNNKMw4dg3uYtVoNnkBrqYXVbMY3UOWELpYcCoeVasa4H0rNn/KmUqIcgP7fBfD+vNvScq0riRCw=="
+        length="1841213"
+        type="application/octet-stream"
+      />
+    </item>
+
+    <item>
       <title>Version 1.2.1</title>
       <pubDate>Sun, 18 May 2026 15:00:00 +0000</pubDate>
       <sparkle:version>1.2.1</sparkle:version>
