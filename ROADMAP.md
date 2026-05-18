@@ -7,6 +7,8 @@
 
 ## Recently shipped / Недавно выпущено
 
+- ✅ **Sparkle auto-updates / Авто-обновления** — native update dialog with EdDSA verification; no Apple Developer account required *(v1.3.0)*
+- ✅ **Homebrew tap / Homebrew** — `brew tap bvsmma/tap && brew install --cask tokentracker` *(v1.3.0)*
 - ✅ **Multiple accounts / Несколько аккаунтов** — up to 5 accounts with independent tokens and Org IDs; quick switching clears and reloads limits  
   До 5 аккаунтов с независимыми токенами и Org ID; переключение сразу обновляет лимиты *(v1.2.0)*
 - ✅ **Widget account selection / Выбор аккаунта для виджета** — choose which account the widget displays in Settings → Widget  
