@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.2.1 — May 2026
+
+### Fixed
+- Widget stopped syncing after v1.2.0 — caused by switching to `AppIntentConfiguration` (broken on macOS Sequoia/26); reverted to `StaticConfiguration` which restores live updates. Widget account selection via Settings → Widget is unaffected.
+
+---
+
 ## v1.2.0 — May 2026
 
 ### New features
