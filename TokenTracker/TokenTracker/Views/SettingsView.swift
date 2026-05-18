@@ -808,8 +808,9 @@ struct SettingsView: View {
                 }
 
                 // Update banner
-                if let ver = orchestrator.updateAvailable, let url = orchestrator.updateReleaseURL {
-                    Button { NSWorkspace.shared.open(url) } label: {
+                if let ver = orchestrator.updateAvailable {
+                    let checker = UpdateChecker.shared
+                    VStack(spacing: 6) {
                         HStack(spacing: 6) {
                             Image(systemName: "arrow.down.circle.fill")
                                 .foregroundStyle(.green)
@@ -817,16 +818,44 @@ struct SettingsView: View {
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(.green)
                             Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.green.opacity(0.6))
+                            Button {
+                                checker.downloadAndOpen()
+                            } label: {
+                                Group {
+                                    if checker.isDownloading {
+                                        HStack(spacing: 4) {
+                                            ProgressView().controlSize(.mini).tint(.green)
+                                            Text("\(Int(checker.downloadProgress * 100))%")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.green.opacity(0.7))
+                                        }
+                                    } else {
+                                        Text(L10n.s("Скачать", "Download"))
+                                            .font(.system(size: 10, weight: .semibold))
+                                            .foregroundStyle(.green)
+                                    }
+                                }
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background(.green.opacity(0.15), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(checker.isDownloading)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.green.opacity(0.2), lineWidth: 0.5))
+                        if checker.isDownloading {
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2).fill(.white.opacity(0.08)).frame(height: 3)
+                                    RoundedRectangle(cornerRadius: 2).fill(.green.opacity(0.6))
+                                        .frame(width: geo.size.width * checker.downloadProgress, height: 3)
+                                }
+                            }
+                            .frame(height: 3)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(.green.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.green.opacity(0.15), lineWidth: 0.5))
                 }
 
                 Divider().background(.white.opacity(0.06))

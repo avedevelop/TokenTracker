@@ -62,7 +62,17 @@
 
 ## Установка / Installation
 
-### Скачать / Download
+### Homebrew (рекомендуется / recommended)
+
+```bash
+brew tap bvsmma/tap
+brew install --cask tokentracker
+```
+
+> **RU:** При первом запуске macOS может показать предупреждение — правой кнопкой на иконке → Открыть.  
+> **EN:** On first launch macOS may show a warning — right-click the icon → Open.
+
+### Скачать вручную / Download manually
 
 Скачайте последний релиз → [Releases](../../releases) → `TokenTracker-x.x.x.dmg`
 
