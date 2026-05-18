@@ -39,6 +39,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellable: AnyCancellable?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Single-instance enforcement: if another copy is already running, bring it to front and exit
+        let running = NSWorkspace.shared.runningApplications
+        let others = running.filter {
+            $0.bundleIdentifier == Bundle.main.bundleIdentifier &&
+            $0.processIdentifier != ProcessInfo.processInfo.processIdentifier
+        }
+        if let existing = others.first {
+            existing.activate(options: .activateIgnoringOtherApps)
+            NSApp.terminate(nil)
+            return
+        }
+
         NSApplication.shared.setActivationPolicy(.regular)
         setupStatusItem()
         orchestrator.start()

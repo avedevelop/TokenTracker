@@ -17,7 +17,11 @@ final class AppOrchestrator: ObservableObject {
 
     func start() {
         server.start()
-        isLoggedIn = KeychainStore.load() != nil
+        isLoggedIn = AccountStore.shared.activeToken() != nil
+        // Ensure UserDefaults orgId matches the active profile's orgId on every launch
+        if let orgId = AccountStore.shared.activeProfile?.orgId, !orgId.isEmpty {
+            UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
+        }
         startFSWatcher()
         refreshTokenUsage()
         Task { await checkForUpdates() }
@@ -25,6 +29,7 @@ final class AppOrchestrator: ObservableObject {
         if isLoggedIn {
             startLimitsPolling()
             pollLimitsNow()
+            pollInactiveAccountsLimits()
             DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                 WidgetCenter.shared.reloadAllTimelines()
             }
@@ -38,7 +43,7 @@ final class AppOrchestrator: ObservableObject {
         guard !isLoggedIn,
               let token = LimitsPoller().readClaudeCodeOAuthToken() else { return }
         // Store OAuth token as the session credential
-        try? KeychainStore.save(token)
+        AccountStore.shared.ensureProfile(token: token)
         isLoggedIn = true
         startLimitsPolling()
         pollLimitsNow()
@@ -64,14 +69,29 @@ final class AppOrchestrator: ObservableObject {
         tokenExpired = false
         startLimitsPolling()
         pollLimitsNow()
-        // Reload widgets after limits arrive (give network request time to complete)
+        Task { await refreshActiveProfileInfo() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             WidgetCenter.shared.reloadAllTimelines()
         }
     }
 
+    func refreshActiveProfileInfo() async {
+        guard let token = AccountStore.shared.activeToken(),
+              let id = AccountStore.shared.activeId else { return }
+        let poller = LimitsPoller()
+        let info: LimitsPoller.UserInfo
+        if token.hasPrefix("sk-ant-oat") {
+            info = await poller.fetchUserInfoWithOAuth(token)
+        } else {
+            info = await poller.fetchUserInfo(sessionKey: token)
+        }
+        AccountStore.shared.updateProfileInfo(id: id, email: info.email, fullName: info.fullName)
+    }
+
     func logout() {
-        KeychainStore.delete()
+        if let profile = AccountStore.shared.activeProfile {
+            AccountStore.shared.remove(profile)
+        }
         isLoggedIn = false
         limitsTimer?.invalidate()
         limitsTimer = nil
@@ -81,6 +101,30 @@ final class AppOrchestrator: ObservableObject {
         try? SharedStore.write(stored)
         usage = stored
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    func switchAccount(_ profile: AccountProfile) {
+        AccountStore.shared.setActive(profile.id)
+        limitsTimer?.invalidate()
+        limitsTimer = nil
+        // Sync this profile's orgId to UserDefaults so LimitsPoller picks it up immediately
+        if !profile.orgId.isEmpty {
+            UserDefaults.standard.set(profile.orgId, forKey: "com.tokentracker.orgId")
+        } else {
+            UserDefaults.standard.removeObject(forKey: "com.tokentracker.orgId")
+        }
+        // Clear stale limits so UI doesn't show previous account's data
+        var stored = SharedStore.read()
+        stored.limits = nil
+        stored.limitsUpdatedAt = nil
+        try? SharedStore.write(stored)
+        usage = stored
+        isLoggedIn = AccountStore.shared.activeToken() != nil
+        if isLoggedIn {
+            startLimitsPolling()
+            pollLimitsNow()
+            Task { await refreshActiveProfileInfo() }
+        }
     }
 
     func checkForUpdates() async {
@@ -115,17 +159,65 @@ final class AppOrchestrator: ObservableObject {
         usage = SharedStore.read()
         HistoryStore.snapshotToday(from: usage, limits: usage.limits)
         NotificationManager.shared.checkBudget(usage.costToday)
+
+        // Monthly budget check
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let currentMonth = formatter.string(from: Date())
+        let allRecords = HistoryStore.shared.load()
+        let monthlySpend = allRecords
+            .filter { $0.date.hasPrefix(currentMonth) }
+            .map(\.cost)
+            .reduce(0, +)
+        NotificationManager.shared.checkMonthlyBudget(monthlySpend)
     }
 
     private func startLimitsPolling() {
         limitsTimer?.invalidate()
         limitsTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            Task { @MainActor in self?.pollLimitsNow() }
+            Task { @MainActor in
+                self?.pollLimitsNow()
+                self?.pollInactiveAccountsLimits()
+            }
+        }
+    }
+
+    /// Polls limits for all non-active accounts and writes them to per-account snapshots
+    /// so the widget can display data for any specific account, not just the active one.
+    private func pollInactiveAccountsLimits() {
+        let activeId = AccountStore.shared.activeId
+        let inactive = AccountStore.shared.profiles.filter { $0.id != activeId && !$0.orgId.isEmpty }
+        for profile in inactive {
+            guard let token = AccountStore.shared.token(for: profile.id) else { continue }
+            let profileId = profile.id
+            let orgId = profile.orgId
+            Task {
+                do {
+                    let poller = LimitsPoller()
+                    let limits: UsageData.Limits
+                    if token.hasPrefix("sk-ant-oat") {
+                        // OAuth path doesn't support an arbitrary orgId override; skip for now
+                        return
+                    } else {
+                        limits = try await poller.fetchLimits(sessionKey: token, orgId: orgId)
+                    }
+                    SharedStore.updateLimits(limits, forAccount: profileId)
+                    await MainActor.run {
+                        AccountStore.shared.markTokenStatus(id: profileId, valid: true)
+                    }
+                } catch LimitsPoller.PollerError.unauthorized {
+                    await MainActor.run {
+                        AccountStore.shared.markTokenStatus(id: profileId, valid: false)
+                    }
+                } catch {
+                    // Network failure — keep last known snapshot for this account
+                }
+            }
         }
     }
 
     private func pollLimitsNow() {
-        guard let token = KeychainStore.load() else { return }
+        guard let token = AccountStore.shared.activeToken() else { return }
         Task {
             do {
                 let poller = LimitsPoller()

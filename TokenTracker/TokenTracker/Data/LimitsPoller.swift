@@ -29,23 +29,16 @@ final class LimitsPoller {
         return oauth
     }
 
-    /// Reads org ID from Claude Desktop's Cookies SQLite database (no network needed).
+    /// Fetches org ID for the given session key via API only (Desktop cookies are per-user and unsafe as fallback).
     private func fetchAndCacheOrgId(sessionKey: String) async {
-        // 1. Read lastActiveOrg cookie from Claude Desktop (decrypted via macOS Keychain)
-        if let orgId = readOrgIdFromClaudeDesktop() {
-            UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
-            return
-        }
-        // 2. Try API with session key cookie (Swift URLSession passes Cloudflare)
         if let orgId = await fetchOrgIdFromAPI(auth: .cookie(sessionKey)) {
-            UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
-            return
+            await cacheOrgId(orgId)
         }
-        // 3. Try Claude Code OAuth token as Bearer auth
-        if let oauthToken = readClaudeCodeOAuthToken(),
-           let orgId = await fetchOrgIdFromAPI(auth: .bearer(oauthToken)) {
-            UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
-        }
+        // No Desktop fallback — it stores the last logged-in user's org and would contaminate other accounts.
+    }
+
+    private func cacheOrgId(_ orgId: String) async {
+        UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
     }
 
     private enum AuthMethod {
@@ -170,14 +163,80 @@ final class LimitsPoller {
         return result == kCCSuccess ? Data(output.prefix(outLength)) : nil
     }
 
+    struct UserInfo {
+        var email: String?
+        var fullName: String?
+    }
+
+    func fetchUserInfo(sessionKey: String) async -> UserInfo {
+        if let info = await fetchFromAccount(sessionKey: sessionKey) { return info }
+        return await fetchFromOrganizations(sessionKey: sessionKey)
+    }
+
+    func fetchUserInfoWithOAuth(_ token: String) async -> UserInfo {
+        guard let url = URL(string: "https://claude.ai/api/account") else { return UserInfo() }
+        var req = URLRequest(url: url)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return UserInfo() }
+        let email = json["email"] as? String
+        let name = json["full_name"] as? String ?? json["name"] as? String
+        return UserInfo(email: email, fullName: name)
+    }
+
+    private func fetchFromAccount(sessionKey: String) async -> UserInfo? {
+        guard let url = URL(string: "https://claude.ai/api/account") else { return nil }
+        var req = URLRequest(url: url)
+        req.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        let email = json["email"] as? String
+        let name = json["full_name"] as? String ?? json["name"] as? String
+        guard email != nil || name != nil else { return nil }
+        return UserInfo(email: email, fullName: name)
+    }
+
+    private func fetchFromOrganizations(sessionKey: String) async -> UserInfo {
+        guard let url = URL(string: "https://claude.ai/api/organizations") else { return UserInfo() }
+        var req = URLRequest(url: url)
+        req.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+              let first = json.first
+        else { return UserInfo() }
+        let email = first["user_email"] as? String ?? first["email"] as? String
+        let name = first["user_name"] as? String ?? first["name"] as? String
+        return UserInfo(email: email, fullName: name)
+    }
+
     func fetchLimits(sessionKey: String) async throws -> UsageData.Limits {
-        if UserDefaults.standard.string(forKey: "com.tokentracker.orgId") == nil {
+        // Prefer the active profile's stored orgId (multi-account safe), fall back to fresh fetch
+        var orgId: String? = await MainActor.run { AccountStore.shared.activeOrgId }
+        if orgId == nil || orgId!.isEmpty {
             await fetchAndCacheOrgId(sessionKey: sessionKey)
+            orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
         }
 
-        guard let orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId") else {
+        guard let orgId, !orgId.isEmpty else {
             throw PollerError.missingOrgId
         }
+        return try await fetchLimits(sessionKey: sessionKey, orgId: orgId)
+    }
+
+    /// Variant that takes an explicit orgId (used when polling non-active accounts).
+    func fetchLimits(sessionKey: String, orgId: String) async throws -> UsageData.Limits {
+        guard !orgId.isEmpty else { throw PollerError.missingOrgId }
 
         guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage") else {
             throw PollerError.invalidEndpoint
@@ -205,13 +264,15 @@ final class LimitsPoller {
 
     /// Fetch limits using Claude Code OAuth token (Bearer auth) — no sessionKey needed.
     func fetchLimitsWithOAuthToken(_ token: String) async throws -> UsageData.Limits {
-        if UserDefaults.standard.string(forKey: "com.tokentracker.orgId") == nil {
-            if let orgId = await fetchOrgIdFromAPI(auth: .bearer(token)) {
-                UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
+        var orgId: String? = await MainActor.run { AccountStore.shared.activeOrgId }
+        if orgId == nil || orgId!.isEmpty {
+            if let fetched = await fetchOrgIdFromAPI(auth: .bearer(token)) {
+                await cacheOrgId(fetched)
+                orgId = fetched
             }
         }
 
-        guard let orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId") else {
+        guard let orgId, !orgId.isEmpty else {
             throw PollerError.missingOrgId
         }
 

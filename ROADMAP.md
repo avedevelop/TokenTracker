@@ -7,32 +7,30 @@
 
 ## Recently shipped / Недавно выпущено
 
+- ✅ **Multiple accounts / Несколько аккаунтов** — up to 5 accounts with independent tokens and Org IDs; quick switching clears and reloads limits  
+  До 5 аккаунтов с независимыми токенами и Org ID; переключение сразу обновляет лимиты *(v1.2.0)*
+- ✅ **Widget account selection / Выбор аккаунта для виджета** — choose which account the widget displays in Settings → Widget  
+  Настройки → Виджет позволяют выбрать какой аккаунт отображает виджет *(v1.2.0)*
+- ✅ **Free account support / Поддержка бесплатного аккаунта** — login succeeds even when the usage endpoint is unavailable  
+  Вход работает даже если эндпоинт лимитов недоступен *(v1.2.0)*
+- ✅ **Monthly budget / Месячный бюджет** — monthly spending limit with progress bar and alerts  
+  Месячный лимит расходов с прогресс-баром и уведомлениями *(v1.2.0)*
 - ✅ **Per-project breakdown / Разбивка по проектам** — top-5 projects by tokens and cost on the dashboard  
   Топ-5 проектов по токенам и стоимости на дашборде *(v1.1.0)*
-- ✅ **Check for updates / Проверка обновлений** — button in About + banner on launch when a new version is available  
-  Кнопка в разделе «О приложении» + баннер при запуске если вышла новая версия *(v1.1.0)*
-- ✅ **Localhost-only widget server / Сервер виджета только на localhost** — widget data server now rejects non-localhost connections  
-  Сервер данных виджета теперь отклоняет внешние подключения *(v1.1.0)*
-- ✅ **Window close crash fix / Исправление краша при закрытии** — window hides instead of deallocating, fixes crash on macOS 26 Tahoe  
-  Окно скрывается вместо деалокации, исправлен краш на macOS 26 Tahoe *(v1.0.1)*
-- ✅ **Session token security / Безопасность токена сессии** — credentials stored in Keychain only, removed plaintext UserDefaults backup  
-  Токен хранится только в Keychain, убрана незашифрованная копия в UserDefaults *(v1.0.2)*
+- ✅ **Check for updates / Проверка обновлений** — button in About + banner on launch  
+  Кнопка в «О приложении» + баннер при запуске *(v1.1.0)*
+- ✅ **Session token security / Безопасность токена** — Keychain only, no plaintext backup  
+  Только Keychain, без незашифрованной копии *(v1.0.2)*
 
 ---
 
 ## Next / Следующее
 
-- **Monthly budget / Месячный бюджет** — monthly spending limit with progress bar and alerts at 80% / 100%  
-  Месячный лимит расходов с прогресс-баром и уведомлениями при 80% / 100%
+- **Rate limit history / История лимитов** — chart showing 5-hour utilization over past days  
+  График использования 5-часового лимита по дням
 
-- **Rate limit history / История лимитов** — chart showing 5-hour utilization over past days, not just token cost  
-  График использования 5-часового лимита по дням, а не только стоимость токенов
-
-- **Multiple accounts / Несколько аккаунтов** — switch between personal and work Claude accounts without re-entering credentials  
-  Переключение между личным и рабочим аккаунтом без повторного ввода токена
-
-- **Light / system theme / Светлая тема** — option to follow macOS appearance instead of always dark  
-  Опция следовать системной теме macOS вместо постоянно тёмной
+- **Light / system theme / Светлая тема** — option to follow macOS appearance  
+  Опция следовать системной теме macOS
 
 ---
 

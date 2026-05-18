@@ -1,10 +1,10 @@
 import SwiftUI
 
-private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
-
 struct ContentView: View {
     @EnvironmentObject var orchestrator: AppOrchestrator
     @AppStorage("onboardingComplete") var onboardingComplete = false
+
+    private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
 
     var body: some View {
         ZStack {

@@ -4,8 +4,6 @@ import ServiceManagement
 import Combine
 import UniformTypeIdentifiers
 
-private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
-
 struct SettingsView: View {
     @EnvironmentObject var orchestrator: AppOrchestrator
     @State private var isSyncing = false
@@ -14,6 +12,11 @@ struct SettingsView: View {
     @State private var now = Date()
     @State private var exportedCSV = false
     @State private var historyDays: Int = 7
+    @State private var historyMetric: HistoryMetric = .cost
+
+    enum HistoryMetric { case cost, fiveHour }
+
+    private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
 
     let countdownTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
@@ -62,13 +65,62 @@ struct SettingsView: View {
             }
         }
         .frame(width: 340)
-        .environment(\.colorScheme, .dark)
         .onReceive(countdownTimer) { date in now = date }
         .background(
             Button("") { activeTab = .settings }
                 .keyboardShortcut(",", modifiers: .command)
                 .opacity(0)
         )
+        .overlay {
+            if showAddAccount {
+                ZStack {
+                    Color.black.opacity(0.55)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(duration: 0.25)) { showAddAccount = false }
+                        }
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text(L10n.addAccount)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.7))
+                            Spacer()
+                            Button {
+                                withAnimation(.spring(duration: 0.25)) { showAddAccount = false }
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.4))
+                                    .frame(width: 22, height: 22)
+                                    .background(.white.opacity(0.08), in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 18)
+                        .padding(.bottom, 14)
+
+                        Divider().background(.white.opacity(0.06))
+
+                        LoginView(onLoginSuccess: {
+                            withAnimation(.spring(duration: 0.25)) { showAddAccount = false }
+                            orchestrator.onLoginSuccess()
+                        }, isSheet: true)
+                        .environmentObject(orchestrator)
+                    }
+                    .background(Color(red: 0.11, green: 0.09, blue: 0.17))
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 40)
+                    .shadow(color: .black.opacity(0.5), radius: 30, y: 10)
+                }
+                .environment(\.colorScheme, .dark)
+                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .center)))
+            }
+        }
+        .animation(.spring(duration: 0.25), value: showAddAccount)
     }
 
     // MARK: - Header
@@ -196,6 +248,23 @@ struct SettingsView: View {
                             )
                         }
                     }
+                } else if orchestrator.isLoggedIn && (accountStore.activeProfile?.orgId ?? "").isEmpty {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(L10n.s("Лимиты недоступны", "Limits unavailable"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.45))
+                        Text(L10n.s("Укажите Org ID в настройках аккаунта", "Set Org ID in the account settings"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.25))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 4)
+                } else if orchestrator.isLoggedIn {
+                    Text(L10n.s("Загрузка лимитов…", "Loading limits…"))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.3))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
                 } else {
                     Text(L10n.loginForLimits)
                         .font(.system(size: 12))
@@ -289,101 +358,188 @@ struct SettingsView: View {
 
     // MARK: - Tab: Account
 
-    @State private var showOrgIdEditor = false
+    @State private var editingOrgIdFor: UUID? = nil
     @State private var orgIdDraft = ""
     @FocusState private var orgIdFieldFocused: Bool
+    @ObservedObject private var accountStore = AccountStore.shared
+    @State private var showAddAccount = false
 
     private var accountTab: some View {
         Group {
-            avatarSection
-            orgIdSection
+            accountsSection
             sessionSection
             signOutSection
         }
     }
 
-    private var orgIdSection: some View {
+    private var accountsSection: some View {
         DarkCard {
             VStack(spacing: 0) {
-                cardHeader("Org ID", updated: nil)
-                let current = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
-
-                if showOrgIdEditor {
-                    VStack(alignment: .leading, spacing: 10) {
-                        // Instructions
-                        VStack(alignment: .leading, spacing: 6) {
-                            instructionRow(1, L10n.s("Откройте **claude.ai** → **Cmd+Option+I**", "Open **claude.ai** → **Cmd+Option+I**"))
-                            instructionRow(2, L10n.s("**Application** → **Cookies** → **claude.ai**", "**Application** → **Cookies** → **claude.ai**"))
-                            instructionRow(3, L10n.s("Найдите **lastActiveOrg** → скопируйте", "Find **lastActiveOrg** → copy value"))
-                        }
-                        .padding(10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 10))
-
-                        TextField("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", text: $orgIdDraft)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(.white)
-                            .focused($orgIdFieldFocused)
-                            .padding(10)
-                            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
-                            .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
-                            .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { orgIdFieldFocused = true } }
-
-                        HStack {
-                            Button(L10n.s("Отмена", "Cancel")) {
-                                showOrgIdEditor = false
-                                orgIdDraft = ""
-                            }
-                            .font(.system(size: 12)).foregroundStyle(.white.opacity(0.4)).buttonStyle(.plain)
-                            Spacer()
-                            Button(L10n.s("Сохранить", "Save")) {
-                                let v = orgIdDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                                if !v.isEmpty {
-                                    UserDefaults.standard.set(v, forKey: "com.tokentracker.orgId")
+                cardHeader(L10n.s("Аккаунты", "Accounts"), updated: nil)
+                VStack(spacing: 8) {
+                    ForEach(accountStore.profiles) { profile in
+                        let isActive = accountStore.activeId == profile.id
+                        VStack(spacing: 0) {
+                            // — Main row —
+                            HStack(spacing: 10) {
+                                ZStack {
+                                    Circle()
+                                        .fill(isActive ? Color.purple.opacity(0.22) : Color.white.opacity(0.06))
+                                        .overlay(Circle().strokeBorder(
+                                            isActive ? Color.purple.opacity(0.35) : Color.white.opacity(0.08),
+                                            lineWidth: 1))
+                                        .frame(width: 36, height: 36)
+                                    Text(profile.initials)
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(isActive ? .white : .white.opacity(0.5))
                                 }
-                                showOrgIdEditor = false
-                                orgIdDraft = ""
-                                orchestrator.forceRefresh()
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(profile.displayName)
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(.white.opacity(0.85))
+                                        .lineLimit(1)
+                                    HStack(spacing: 4) {
+                                        Circle()
+                                            .fill(profile.tokenValid ? Color.green : Color.red)
+                                            .frame(width: 5, height: 5)
+                                        Text(profile.tokenValid
+                                             ? L10n.s("Токен активен", "Token active")
+                                             : L10n.s("Токен истёк", "Token expired"))
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(profile.tokenValid ? .green.opacity(0.7) : .red.opacity(0.7))
+                                    }
+                                }
+
+                                Spacer()
+
+                                HStack(spacing: 6) {
+                                    if !isActive {
+                                        Button { orchestrator.switchAccount(profile) } label: {
+                                            Image(systemName: "arrow.left.arrow.right")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundStyle(.white.opacity(0.55))
+                                                .frame(width: 28, height: 22)
+                                                .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help(L10n.switchAccount)
+                                    } else {
+                                        Text(L10n.s("Активен", "Active"))
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundStyle(.purple.opacity(0.85))
+                                            .padding(.horizontal, 8).padding(.vertical, 3)
+                                            .background(.purple.opacity(0.12), in: Capsule())
+                                    }
+
+                                    if accountStore.profiles.count > 1 {
+                                        Button { accountStore.remove(profile) } label: {
+                                            Image(systemName: "trash")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.red.opacity(0.4))
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
                             }
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(orgIdDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .white.opacity(0.3) : .white)
-                            .buttonStyle(.plain)
-                            .disabled(orgIdDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        }
-                    }
-                } else {
-                    HStack {
-                        if let id = current {
-                            Text(id)
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.5))
-                                .lineLimit(1).truncationMode(.middle)
-                        } else {
-                            HStack(spacing: 6) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 11)).foregroundStyle(.orange.opacity(0.8))
-                                Text(L10n.s("Не установлен", "Not set"))
-                                    .font(.system(size: 12)).foregroundStyle(.orange.opacity(0.8))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+
+                            // — Org ID row —
+                            Rectangle().fill(.white.opacity(0.05)).frame(height: 0.5)
+
+                            if editingOrgIdFor == profile.id {
+                                VStack(spacing: 7) {
+                                    TextField("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", text: $orgIdDraft)
+                                        .textFieldStyle(.plain)
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .foregroundStyle(.white)
+                                        .focused($orgIdFieldFocused)
+                                        .padding(.horizontal, 8).padding(.vertical, 6)
+                                        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 7))
+                                        .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
+                                        .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { orgIdFieldFocused = true } }
+                                    HStack {
+                                        Button(L10n.s("Отмена", "Cancel")) { editingOrgIdFor = nil; orgIdDraft = "" }
+                                            .font(.system(size: 10)).foregroundStyle(.white.opacity(0.4)).buttonStyle(.plain)
+                                        Spacer()
+                                        Button(L10n.s("Сохранить", "Save")) {
+                                            let v = orgIdDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                                            if !v.isEmpty { accountStore.updateOrgId(v, for: profile.id) }
+                                            editingOrgIdFor = nil; orgIdDraft = ""
+                                            orchestrator.forceRefresh()
+                                        }
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(orgIdDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .white.opacity(0.3) : .white)
+                                        .buttonStyle(.plain)
+                                        .disabled(orgIdDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                    }
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 8)
+                            } else {
+                                HStack(spacing: 6) {
+                                    Text("Org ID")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.25))
+                                    if !profile.orgId.isEmpty {
+                                        Text(profile.orgId)
+                                            .font(.system(size: 10, design: .monospaced))
+                                            .foregroundStyle(.white.opacity(0.35))
+                                            .lineLimit(1).truncationMode(.middle)
+                                    } else {
+                                        Text(L10n.s("Не задан", "Not set"))
+                                            .font(.system(size: 10))
+                                            .foregroundStyle(.orange.opacity(0.55))
+                                    }
+                                    Spacer()
+                                    Button {
+                                        orgIdDraft = profile.orgId
+                                        editingOrgIdFor = profile.id
+                                    } label: {
+                                        Text(profile.orgId.isEmpty ? L10n.s("Добавить", "Add") : L10n.s("Изменить", "Edit"))
+                                            .font(.system(size: 10, weight: .medium))
+                                            .foregroundStyle(.white.opacity(0.35))
+                                            .padding(.horizontal, 7).padding(.vertical, 2)
+                                            .overlay(Capsule().strokeBorder(.white.opacity(0.12), lineWidth: 0.5))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 8)
                             }
                         }
-                        Spacer()
-                        Button {
-                            orgIdDraft = current ?? ""
-                            showOrgIdEditor = true
-                        } label: {
-                            Text(current == nil ? L10n.s("Добавить", "Add") : L10n.s("Изменить", "Edit"))
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.6))
-                                .padding(.horizontal, 10).padding(.vertical, 4)
-                                .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 0.5))
-                        }
-                        .buttonStyle(.plain)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(isActive ? .white.opacity(0.05) : .white.opacity(0.025))
+                                .overlay(RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(isActive ? .white.opacity(0.1) : .white.opacity(0.06), lineWidth: 0.5))
+                        )
                     }
+
+                    Divider().background(.white.opacity(0.06))
+
+                    if accountStore.profiles.count < 5 {
+                    Button {
+                        showAddAccount = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle")
+                                .font(.system(size: 12))
+                            Text(L10n.addAccount)
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundStyle(.white.opacity(0.6))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 9))
+                        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.08), lineWidth: 0.5))
+                    }
+                    .buttonStyle(.plain)
+                    } // if count < 5
                 }
             }
         }
     }
+
 
     private func instructionRow(_ n: Int, _ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
@@ -454,9 +610,9 @@ struct SettingsView: View {
                         Spacer()
                         HStack(spacing: 5) {
                             Circle()
-                                .fill(KeychainStore.load() != nil ? Color.green.opacity(0.8) : Color.red.opacity(0.7))
+                                .fill(AccountStore.shared.activeToken() != nil ? Color.green.opacity(0.8) : Color.red.opacity(0.7))
                                 .frame(width: 6, height: 6)
-                            Text(KeychainStore.load() != nil ? L10n.statusActive : L10n.statusUnauthorized)
+                            Text(AccountStore.shared.activeToken() != nil ? L10n.statusActive : L10n.statusUnauthorized)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(.white.opacity(0.7))
                         }
@@ -502,9 +658,82 @@ struct SettingsView: View {
     private var settingsTab: some View {
         Group {
             behaviorSection
+            widgetAccountSection
             notificationsSection
             budgetSection
             aboutSection
+        }
+    }
+
+    // MARK: - Widget account section
+
+    private var widgetAccountSection: some View {
+        DarkCard {
+            VStack(spacing: 0) {
+                cardHeader(L10n.s("Виджет", "Widget"), updated: nil)
+                VStack(spacing: 10) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.s("Аккаунт в виджете", "Widget account"))
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.7))
+                            Text(L10n.s("Какие данные показывает виджет", "Which account data the widget displays"))
+                                .font(.system(size: 10))
+                                .foregroundStyle(.white.opacity(0.3))
+                        }
+                        Spacer()
+                    }
+
+                    // "Active account" option
+                    widgetAccountRow(id: nil,
+                                     name: L10n.s("Активный аккаунт", "Active account"),
+                                     subtitle: L10n.s("Следует за выбором в приложении", "Follows app's active account"))
+
+                    // One row per profile
+                    ForEach(accountStore.profiles) { profile in
+                        widgetAccountRow(id: profile.id,
+                                         name: profile.displayName,
+                                         subtitle: profile.orgId.isEmpty
+                                             ? L10n.s("Org ID не задан", "Org ID not set")
+                                             : String(profile.orgId.prefix(8)) + "…")
+                    }
+                }
+            }
+        }
+    }
+
+    @State private var widgetAccountId: UUID? = SharedStore.readAccountsManifest().widgetAccountId
+
+    private func widgetAccountRow(id: UUID?, name: String, subtitle: String) -> some View {
+        let selected = widgetAccountId == id
+        return HStack(spacing: 10) {
+            Circle()
+                .fill(selected ? Color.purple : Color.white.opacity(0.08))
+                .overlay(Circle().strokeBorder(
+                    selected ? Color.purple.opacity(0.6) : Color.white.opacity(0.12), lineWidth: 0.5))
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(name)
+                    .font(.system(size: 11, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(selected ? .white : .white.opacity(0.6))
+                Text(subtitle)
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.3))
+            }
+            Spacer()
+            if selected {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.purple)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 10).padding(.vertical, 10)
+        .background(selected ? .white.opacity(0.05) : .white.opacity(0.02), in: RoundedRectangle(cornerRadius: 8))
+        .contentShape(RoundedRectangle(cornerRadius: 8))
+        .onTapGesture {
+            widgetAccountId = id
+            SharedStore.setWidgetAccount(id)
         }
     }
 
@@ -799,7 +1028,7 @@ struct SettingsView: View {
     }
 
     private func maskedSessionKey() -> String {
-        guard let key = KeychainStore.load(), !key.isEmpty else { return "—" }
+        guard let key = AccountStore.shared.activeToken(), !key.isEmpty else { return "—" }
         let prefix = String(key.prefix(20))
         return "\(prefix)…"
     }
@@ -904,8 +1133,49 @@ struct SettingsView: View {
                             }
                             .buttonStyle(.plain)
                         }
+                        // Metric picker: Cost / 5h limit
+                    HStack(spacing: 6) {
+                        Button {
+                            historyMetric = .cost
+                        } label: {
+                            Text(L10n.cost)
+                                .font(.system(size: 11, weight: historyMetric == .cost ? .semibold : .regular))
+                                .foregroundStyle(historyMetric == .cost ? .white : .white.opacity(0.4))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(historyMetric == .cost ? .white.opacity(0.12) : .white.opacity(0.04))
+                                        .overlay(RoundedRectangle(cornerRadius: 8)
+                                            .strokeBorder(historyMetric == .cost ? .white.opacity(0.2) : .clear, lineWidth: 0.5))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        Button {
+                            historyMetric = .fiveHour
+                        } label: {
+                            Text(L10n.s("5ч лимит", "5h limit"))
+                                .font(.system(size: 11, weight: historyMetric == .fiveHour ? .semibold : .regular))
+                                .foregroundStyle(historyMetric == .fiveHour ? .white : .white.opacity(0.4))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(historyMetric == .fiveHour ? .white.opacity(0.12) : .white.opacity(0.04))
+                                        .overlay(RoundedRectangle(cornerRadius: 8)
+                                            .strokeBorder(historyMetric == .fiveHour ? .white.opacity(0.2) : .clear, lineWidth: 0.5))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if historyMetric == .cost {
                         WeeklyBarChart(records: records)
                             .frame(height: 60)
+                    } else {
+                        LimitBarChart(records: records)
+                            .frame(height: 60)
+                    }
                     }
                 }
 
@@ -1036,17 +1306,32 @@ private struct NotificationsCard: View {
 private struct BudgetCard: View {
     let currentSpend: Double
 
-    @AppStorage("budget.daily") private var dailyBudget: Double = 0
+    @AppStorage("budget.daily")   private var dailyBudget: Double = 0
+    @AppStorage("budget.monthly") private var monthlyBudget: Double = 0
     @State private var budgetEnabled: Bool = false
+    @State private var monthlyEnabled: Bool = false
     @State private var customAmount: String = ""
     @State private var showingCustomField: Bool = false
+    @State private var customMonthlyAmount: String = ""
+    @State private var showingMonthlyCustomField: Bool = false
 
     private let presets: [Double] = [5, 10, 25, 50]
+    private let monthlyPresets: [Double] = [50, 100, 250, 500]
+
+    private var monthlySpend: Double {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let currentMonth = formatter.string(from: Date())
+        return HistoryStore.shared.load()
+            .filter { $0.date.hasPrefix(currentMonth) }
+            .map(\.cost)
+            .reduce(0, +)
+    }
 
     var body: some View {
         DarkCard {
             VStack(spacing: 0) {
-                cardHeader(L10n.s("Дневной бюджет", "Daily budget"))
+                cardHeader(L10n.s("Бюджет", "Budget"))
                 VStack(spacing: 10) {
                     HStack {
                         IconLabel(text: L10n.s("Лимит расходов", "Spend limit"), icon: "creditcard.fill")
@@ -1166,10 +1451,134 @@ private struct BudgetCard: View {
                         }
                     }
                 }
+
+                // MARK: - Monthly budget section
+                Divider().background(.white.opacity(0.06)).padding(.vertical, 10)
+
+                cardHeader(L10n.monthlyBudget)
+                VStack(spacing: 10) {
+                    HStack {
+                        IconLabel(text: L10n.s("Месячный лимит", "Monthly limit"), icon: "calendar.badge.clock")
+                        Spacer()
+                        Toggle("", isOn: $monthlyEnabled)
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .tint(.white.opacity(0.6))
+                            .onChange(of: monthlyEnabled) { _, enabled in
+                                if !enabled { monthlyBudget = 0 }
+                                else if monthlyBudget == 0 { monthlyBudget = 100 }
+                            }
+                    }
+
+                    if monthlyEnabled {
+                        Divider().background(.white.opacity(0.06))
+
+                        HStack(spacing: 6) {
+                            ForEach(monthlyPresets, id: \.self) { amount in
+                                Button {
+                                    monthlyBudget = amount
+                                    showingMonthlyCustomField = false
+                                } label: {
+                                    Text("$\(Int(amount))")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(monthlyBudget == amount && !showingMonthlyCustomField
+                                            ? .white
+                                            : .white.opacity(0.5))
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 5)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(monthlyBudget == amount && !showingMonthlyCustomField
+                                                    ? .white.opacity(0.15)
+                                                    : .white.opacity(0.05))
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            Button {
+                                showingMonthlyCustomField.toggle()
+                                if showingMonthlyCustomField {
+                                    customMonthlyAmount = monthlyBudget > 0 && !monthlyPresets.contains(monthlyBudget)
+                                        ? String(format: "%.2f", monthlyBudget)
+                                        : ""
+                                }
+                            } label: {
+                                Text(L10n.s("Своё", "Custom"))
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(showingMonthlyCustomField ? .white : .white.opacity(0.5))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(showingMonthlyCustomField
+                                                ? .white.opacity(0.15)
+                                                : .white.opacity(0.05))
+                                    )
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if showingMonthlyCustomField {
+                            HStack(spacing: 8) {
+                                Text("$")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.5))
+                                TextField("0.00", text: $customMonthlyAmount)
+                                    .textFieldStyle(.plain)
+                                    .font(.system(size: 13, design: .rounded))
+                                    .foregroundStyle(.white)
+                                    .onSubmit {
+                                        if let val = Double(customMonthlyAmount), val > 0 {
+                                            monthlyBudget = val
+                                            showingMonthlyCustomField = false
+                                        }
+                                    }
+                                Button("OK") {
+                                    if let val = Double(customMonthlyAmount), val > 0 {
+                                        monthlyBudget = val
+                                        showingMonthlyCustomField = false
+                                    }
+                                }
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.7))
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                        }
+
+                        Divider().background(.white.opacity(0.06))
+
+                        let spend = monthlySpend
+                        let mPct = monthlyBudget > 0 ? min(spend / monthlyBudget, 1.0) : 0
+                        VStack(spacing: 6) {
+                            HStack {
+                                Text(L10n.s("Этот месяц", "This month"))
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.white.opacity(0.4))
+                                Spacer()
+                                Text(String(format: "$%.2f / $%.2f", spend, monthlyBudget))
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(mPct >= 1.0 ? .red : mPct >= 0.8 ? .orange : .white.opacity(0.8))
+                            }
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 3).fill(.white.opacity(0.08))
+                                    RoundedRectangle(cornerRadius: 3)
+                                        .fill(mPct >= 1.0 ? Color.red.opacity(0.8) : mPct >= 0.8 ? Color.orange.opacity(0.8) : Color.white.opacity(0.7))
+                                        .frame(width: geo.size.width * mPct)
+                                }
+                            }
+                            .frame(height: 4)
+                        }
+                    }
+                }
             }
         }
         .onAppear {
             budgetEnabled = dailyBudget > 0
+            monthlyEnabled = monthlyBudget > 0
         }
     }
 
@@ -1315,6 +1724,57 @@ struct HourlyBarChart: View {
                         .onHover { hoveredHour = $0 ? h : nil }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Limit Bar Chart (5h utilisation %)
+
+struct LimitBarChart: View {
+    let records: [DayRecord]
+
+    private func dayLabel(_ dateStr: String) -> String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+        guard let d = f.date(from: dateStr) else { return "" }
+        let df = DateFormatter(); df.dateFormat = "d"
+        return df.string(from: d)
+    }
+
+    var body: some View {
+        let allZero = records.allSatisfy { $0.maxFiveHourPct == 0 }
+
+        if allZero || records.isEmpty {
+            VStack(spacing: 6) {
+                Image(systemName: "chart.bar")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.white.opacity(0.15))
+                Text(L10n.s("Нет данных за этот период", "No data for this period"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(.white.opacity(0.25))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            HStack(alignment: .bottom, spacing: records.count > 15 ? 2 : 5) {
+                ForEach(records) { record in
+                    let pct = record.maxFiveHourPct / 100.0
+                    VStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(pct > 0.8
+                                  ? Color.red.opacity(0.7)
+                                  : pct > 0.6
+                                      ? Color.orange.opacity(0.7)
+                                      : pct > 0 ? Color.white.opacity(0.55) : Color.white.opacity(0.08))
+                            .frame(maxHeight: .infinity)
+                            .scaleEffect(y: max(pct, pct > 0 ? 0.04 : 0.02), anchor: .bottom)
+                        if records.count <= 14 {
+                            Text(dayLabel(record.date))
+                                .font(.system(size: 8))
+                                .foregroundStyle(.white.opacity(0.2))
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
         }
     }
 }

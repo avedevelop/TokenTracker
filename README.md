@@ -47,6 +47,7 @@
 | 📅 | История за 7 / 30 / 90 дней + CSV | 7 / 30 / 90-day history + CSV export |
 | 🖼 | Виджеты трёх размеров (WidgetKit) | Three widget sizes (WidgetKit) |
 | 🔔 | Уведомления о лимитах и бюджете | Limit and budget notifications |
+| 👥 | До 5 аккаунтов с быстрым переключением | Up to 5 accounts with quick switching |
 | 🌍 | Русский и английский интерфейс | Russian and English UI |
 
 ---

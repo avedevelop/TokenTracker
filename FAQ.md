@@ -86,6 +86,30 @@
 
 ---
 
+## Как добавить несколько аккаунтов? / How do I add multiple accounts?
+
+**RU:** Вкладка **Аккаунт** → кнопка **Добавить аккаунт** (максимум 5). Каждый аккаунт хранит токен и Org ID отдельно. Переключение мгновенно обновляет лимиты.
+
+**EN:** **Account** tab → **Add account** button (up to 5 accounts). Each account stores its token and Org ID independently. Switching immediately refreshes limits.
+
+---
+
+## Виджет показывает не тот аккаунт / Widget shows the wrong account
+
+**RU:** Зайдите в **Настройки → Виджет** и выберите нужный аккаунт. По умолчанию виджет следует активному аккаунту в приложении.
+
+**EN:** Go to **Settings → Widget** and select the account. By default the widget follows the app's active account.
+
+---
+
+## Лимиты не отображаются / Limits don't show
+
+**RU:** Проверьте что у аккаунта задан **Org ID** (вкладка Аккаунт → Добавить / Изменить). Бесплатный аккаунт — лимиты недоступны, показываются только токены и стоимость.
+
+**EN:** Check that the account has an **Org ID** set (Account tab → Add / Edit). Free accounts don't have a usage endpoint — only token and cost data is shown.
+
+---
+
 ## Как добавить виджет? / How do I add the widget?
 
 **RU:** Правая кнопка на рабочем столе → **Изменить виджеты** → найдите **TokenTracker** → выберите размер.

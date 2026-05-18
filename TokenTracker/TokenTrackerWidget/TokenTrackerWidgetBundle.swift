@@ -4,17 +4,27 @@ import SwiftUI
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let usage: UsageData
+    let accountName: String?
 }
 
-struct UsageTimelineProvider: TimelineProvider {
+struct UsageTimelineProvider: AppIntentTimelineProvider {
+    typealias Intent = SelectAccountIntent
+    typealias Entry = SimpleEntry
+
     private static let decoder: JSONDecoder = {
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
         return d
     }()
 
-    private static func fetchUsage() async -> UsageData {
-        guard let url = URL(string: "http://localhost:51234/usage") else { return .preview }
+    private static func fetchUsage(for account: AccountEntity) async -> UsageData {
+        let urlStr: String
+        if account.id != "active" {
+            urlStr = "http://localhost:51234/usage?account=\(account.id)"
+        } else {
+            urlStr = "http://localhost:51234/usage"
+        }
+        guard let url = URL(string: urlStr) else { return .preview }
         if let (data, response) = try? await URLSession.shared.data(from: url),
            (response as? HTTPURLResponse)?.statusCode == 200,
            let usage = try? decoder.decode(UsageData.self, from: data) {
@@ -24,30 +34,26 @@ struct UsageTimelineProvider: TimelineProvider {
     }
 
     func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: .now, usage: .preview)
+        SimpleEntry(date: .now, usage: .preview, accountName: nil)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> Void) {
-        Task {
-            let usage = await Self.fetchUsage()
-            completion(SimpleEntry(date: .now, usage: usage))
-        }
+    func snapshot(for configuration: SelectAccountIntent, in context: Context) async -> SimpleEntry {
+        let usage = await Self.fetchUsage(for: configuration.account)
+        return SimpleEntry(date: .now, usage: usage, accountName: configuration.account.name)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> Void) {
-        Task {
-            let usage = await Self.fetchUsage()
-            let entry = SimpleEntry(date: .now, usage: usage)
-            let resetsAt = usage.limits?.fiveHourResetsAt
-            let nextRefreshInterval: Int
-            if let r = resetsAt, r.timeIntervalSinceNow < 3600 {
-                nextRefreshInterval = 5
-            } else {
-                nextRefreshInterval = 1
-            }
-            let nextRefresh = Calendar.current.date(byAdding: .minute, value: nextRefreshInterval, to: .now)!
-            completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+    func timeline(for configuration: SelectAccountIntent, in context: Context) async -> Timeline<SimpleEntry> {
+        let usage = await Self.fetchUsage(for: configuration.account)
+        let entry = SimpleEntry(date: .now, usage: usage, accountName: configuration.account.name)
+        let resetsAt = usage.limits?.fiveHourResetsAt
+        let nextRefreshInterval: Int
+        if let r = resetsAt, r.timeIntervalSinceNow < 3600 {
+            nextRefreshInterval = 5
+        } else {
+            nextRefreshInterval = 1
         }
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: nextRefreshInterval, to: .now)!
+        return Timeline(entries: [entry], policy: .after(nextRefresh))
     }
 }
 
@@ -66,10 +72,14 @@ struct TokenTrackerWidgetEntryView: View {
 }
 
 struct TokenTrackerWidget: Widget {
-    let kind: String = "TokenTrackerWidget"
+    let kind: String = "TokenTrackerWidgetV2"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: UsageTimelineProvider()) { entry in
+        AppIntentConfiguration(
+            kind: kind,
+            intent: SelectAccountIntent.self,
+            provider: UsageTimelineProvider()
+        ) { entry in
             TokenTrackerWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("TokenTracker")

@@ -105,6 +105,12 @@ enum L10n {
     static var notificationsLabel: String { s("Уведомления", "Notifications") }
     static var aboutLabel: String { s("О приложении", "About") }
 
+    // MARK: - Accounts / multi-account
+    static var monthlyBudget: String { s("Месячный бюджет", "Monthly budget") }
+    static var followSystemTheme: String { s("Системная тема", "System theme") }
+    static var addAccount: String { s("Добавить аккаунт", "Add account") }
+    static var switchAccount: String { s("Переключить", "Switch") }
+
     // MARK: - Login view
     static var connectClaude: String { s("Подключите Claude.ai", "Connect Claude.ai") }
     static var loginDescription: String {

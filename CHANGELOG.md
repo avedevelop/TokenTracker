@@ -4,6 +4,32 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.2.0 — May 2026
+
+### New features
+- **Multiple accounts** — add up to 5 Claude.ai accounts and switch between them; each account has its own Keychain token and Org ID stored separately
+- **Widget account selection** — choose which account the widget displays in Settings → Widget (works around macOS Sequoia WidgetKit configuration bug)
+- **Free account support** — accounts without a Pro subscription can be added; limits section shows a clear message when Org ID is missing or usage endpoint is unavailable
+- **Per-account limits polling** — all inactive accounts are polled every minute so the widget always has fresh data for any account
+- **Single-instance enforcement** — launching a second copy of the app brings the existing window to front instead of opening a duplicate
+
+### Improved
+- Account cards redesigned: unified card layout with avatar, status, Org ID row, and action buttons — no more disconnected sub-boxes
+- Switch account button changed to icon (⇄) to avoid text wrapping; tooltip on hover
+- Switching accounts immediately clears stale limits and fetches fresh data for the new account
+- Org ID is now stored per-account profile (not global UserDefaults), preventing cross-account contamination
+- "Add Account" modal opens directly to the token paste step, skipping the intro
+- Limits section shows contextual messages: "Loading…" when logged in but data pending, "Set Org ID" when org ID is missing
+- Budget section renamed from "Daily budget" to "Budget" (covers both daily and monthly limits)
+- Adding a second account no longer overwrites the existing active profile
+
+### Fixed
+- Org ID from one account could leak into another account's profile via Desktop cookie fallback — fixed by using API-first lookup with no Desktop fallback
+- Free account login showed "Network error" instead of succeeding — `unexpectedResponse` from the usage endpoint is now treated as a successful login without limits
+- Switching accounts did not update UserDefaults orgId, causing LimitsPoller to use the wrong org — fixed
+
+---
+
 ## v1.1.0 — May 2026
 
 ### New features

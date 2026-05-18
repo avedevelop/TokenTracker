@@ -73,6 +73,31 @@ final class NotificationManager {
         UNUserNotificationCenter.current().add(request) { _ in }
     }
 
+    func checkMonthlyBudget(_ monthlySpend: Double) {
+        let monthlyBudget = UserDefaults.standard.double(forKey: "budget.monthly")
+        guard monthlyBudget > 0, monthlySpend >= monthlyBudget else { return }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let monthStr = formatter.string(from: Date())
+        let alreadyNotified = UserDefaults.standard.string(forKey: "budget.notified.month") == monthStr
+        guard !alreadyNotified else { return }
+
+        UserDefaults.standard.set(monthStr, forKey: "budget.notified.month")
+
+        let content = UNMutableNotificationContent()
+        content.title = L10n.s("Месячный бюджет исчерпан", "Monthly budget reached")
+        content.body = String(format: "$%.2f / $%.2f", monthlySpend, monthlyBudget)
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: "monthly-budget-limit",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request) { _ in }
+    }
+
     // MARK: - Private
 
     private func checkAndFire(

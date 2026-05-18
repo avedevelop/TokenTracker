@@ -4,6 +4,7 @@ private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
 
 struct LoginView: View {
     let onLoginSuccess: () -> Void
+    var isSheet: Bool = false
     @State private var sessionToken = ""
     @State private var step: Step = .intro
     @State private var isValidating = false
@@ -17,20 +18,22 @@ struct LoginView: View {
         ZStack {
             bg.ignoresSafeArea()
             VStack(spacing: 0) {
-                HStack(spacing: 10) {
-                    Image("ClaudeLogo")
-                        .renderingMode(.template)
-                        .resizable().scaledToFit()
-                        .frame(width: 18, height: 18)
-                        .foregroundStyle(.white.opacity(0.85))
-                    Text("TokenTracker")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.white)
-                }
-                .padding(.top, 28)
-                .padding(.bottom, 24)
+                if !isSheet {
+                    HStack(spacing: 10) {
+                        Image("ClaudeLogo")
+                            .renderingMode(.template)
+                            .resizable().scaledToFit()
+                            .frame(width: 18, height: 18)
+                            .foregroundStyle(.white.opacity(0.85))
+                        Text("TokenTracker")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.top, 28)
+                    .padding(.bottom, 24)
 
-                Rectangle().fill(.white.opacity(0.06)).frame(height: 0.5).padding(.horizontal, 24)
+                    Rectangle().fill(.white.opacity(0.06)).frame(height: 0.5).padding(.horizontal, 24)
+                }
 
                 switch step {
                 case .intro:  introContent
@@ -39,10 +42,12 @@ struct LoginView: View {
                 }
             }
             .padding(.horizontal, 24)
+            .padding(.top, isSheet ? 16 : 0)
             .padding(.bottom, 28)
         }
         .frame(width: 340)
         .environment(\.colorScheme, .dark)
+        .onAppear { if isSheet { step = .paste } }
     }
 
     // MARK: - Intro
@@ -108,18 +113,19 @@ struct LoginView: View {
 
             Spacer()
 
-            // Footer links
-            Rectangle().fill(.white.opacity(0.06)).frame(height: 0.5)
-                .padding(.bottom, 12)
+            if !isSheet {
+                Rectangle().fill(.white.opacity(0.06)).frame(height: 0.5)
+                    .padding(.bottom, 12)
 
-            HStack(spacing: 16) {
-                footerLink("FAQ", url: "https://github.com/bvsmma/TokenTracker/blob/main/FAQ.md")
-                Text("·").foregroundStyle(.white.opacity(0.15)).font(.system(size: 10))
-                footerLink(L10n.s("Условия", "Terms"), url: "https://github.com/bvsmma/TokenTracker/blob/main/TERMS.md")
-                Text("·").foregroundStyle(.white.opacity(0.15)).font(.system(size: 10))
-                footerLink("GitHub", url: "https://github.com/bvsmma/TokenTracker")
+                HStack(spacing: 16) {
+                    footerLink("FAQ", url: "https://github.com/bvsmma/TokenTracker/blob/main/FAQ.md")
+                    Text("·").foregroundStyle(.white.opacity(0.15)).font(.system(size: 10))
+                    footerLink(L10n.s("Условия", "Terms"), url: "https://github.com/bvsmma/TokenTracker/blob/main/TERMS.md")
+                    Text("·").foregroundStyle(.white.opacity(0.15)).font(.system(size: 10))
+                    footerLink("GitHub", url: "https://github.com/bvsmma/TokenTracker")
+                }
+                .padding(.bottom, 4)
             }
-            .padding(.bottom, 4)
         }
         .padding(.top, 12)
     }
@@ -207,10 +213,12 @@ struct LoginView: View {
             }
 
             HStack(spacing: 10) {
-                Button(L10n.back) { step = .intro; error = nil }
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .buttonStyle(.plain)
+                if !isSheet {
+                    Button(L10n.back) { step = .intro; error = nil }
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .buttonStyle(.plain)
+                }
                 Spacer()
                 Button { validate() } label: {
                     HStack(spacing: 6) {
@@ -304,7 +312,7 @@ struct LoginView: View {
         error = nil
 
         Task {
-            guard let token = KeychainStore.load() else {
+            guard let token = AccountStore.shared.activeToken() ?? KeychainStore.load() else {
                 await MainActor.run { isValidating = false; step = .paste }
                 return
             }
@@ -346,7 +354,11 @@ struct LoginView: View {
                     : try await poller.fetchLimits(sessionKey: token)
 
                 // Success — save and proceed
-                try? KeychainStore.save(token)
+                if isSheet {
+                    await AccountStore.shared.addNewProfile(token: token)
+                } else {
+                    await AccountStore.shared.ensureProfile(token: token)
+                }
                 try? SharedStore.updateLimits(limits)
                 await MainActor.run {
                     isValidating = false
@@ -358,10 +370,25 @@ struct LoginView: View {
                     error = L10n.s("Токен недействителен или истёк", "Token is invalid or expired")
                 }
             } catch LimitsPoller.PollerError.missingOrgId {
-                try? KeychainStore.save(token)
+                if isSheet {
+                    await AccountStore.shared.addNewProfile(token: token)
+                } else {
+                    await AccountStore.shared.ensureProfile(token: token)
+                }
                 await MainActor.run {
                     isValidating = false
                     step = .orgId
+                }
+            } catch LimitsPoller.PollerError.unexpectedResponse {
+                // Token valid but usage endpoint unavailable (e.g. free plan — no limits data)
+                if isSheet {
+                    await AccountStore.shared.addNewProfile(token: token)
+                } else {
+                    await AccountStore.shared.ensureProfile(token: token)
+                }
+                await MainActor.run {
+                    isValidating = false
+                    onLoginSuccess()
                 }
             } catch {
                 await MainActor.run {
