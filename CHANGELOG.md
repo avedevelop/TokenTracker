@@ -4,6 +4,19 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.3 — May 2026
+
+### New features
+- **Light theme** — three-way theme picker in Settings → Behaviour: System / Light / Dark (previously dark-only)
+
+### Improved
+- All UI elements — buttons, inputs, progress bars, charts, toggles — fully adapted for light and system themes; no more white-on-white invisible content
+- Activity and history toggles now blue (accent color) when active
+- Widget account selected row shows purple highlight visible in both themes
+- About-section button borders more visible in light mode
+
+---
+
 ## v1.3.2 — May 2026
 
 ### Improved
