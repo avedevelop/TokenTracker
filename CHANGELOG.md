@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.1 — May 2026
+
+### Fixed
+- Update installation: "Download" button now mounts the DMG silently, copies the new app directly over the existing installation, removes quarantine, then quits and relaunches automatically — no manual dragging required
+
+---
+
 ## v1.3.0 — May 2026
 
 ### New features
