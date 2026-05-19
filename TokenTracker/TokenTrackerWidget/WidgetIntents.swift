@@ -45,7 +45,7 @@ struct AccountEntityQuery: EntityQuery {
 
     static func all() async -> [AccountEntity] {
         var list = [AccountEntity(id: "active", name: "Active account")]
-        guard let url = URL(string: "http://localhost:51234/accounts"),
+        guard let url = URL(string: "http://127.0.0.1:51234/accounts"),
               let (data, _) = try? await URLSession.shared.data(from: url)
         else { return list }
         struct Entry: Decodable { let id: UUID; let name: String }

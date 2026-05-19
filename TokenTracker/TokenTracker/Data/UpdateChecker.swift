@@ -100,8 +100,19 @@ final class UpdateChecker {
         let currentAppPath = Bundle.main.bundleURL.path
 
         // Mount DMG silently, parse mount point from hdiutil output
-        let mountOutput = shell("hdiutil attach '\(dmgPath.path)' -nobrowse -noautoopen 2>&1")
-        guard let mountPoint = parseMountPoint(from: mountOutput ?? "") else {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/hdiutil")
+        process.arguments = ["attach", dmgPath.path, "-nobrowse", "-noautoopen"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        try? process.run()
+        process.waitUntilExit()
+        
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let mountOutput = String(data: data, encoding: .utf8) ?? ""
+        
+        guard let mountPoint = parseMountPoint(from: mountOutput) else {
             // Fallback: open DMG in Finder so user can drag manually
             NSWorkspace.shared.open(dmgPath)
             return
@@ -145,10 +156,10 @@ final class UpdateChecker {
         let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         UserDefaults.standard.set(currentVersion, forKey: "com.tokentracker.previousVersion")
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = [scriptPath]
-        try? process.run()
+        let bashProcess = Process()
+        bashProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
+        bashProcess.arguments = [scriptPath]
+        try? bashProcess.run()
 
         NSApp.terminate(nil)
     }
@@ -163,18 +174,6 @@ final class UpdateChecker {
             }
         }
         return nil
-    }
-
-    private func shell(_ cmd: String) -> String? {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/bash")
-        task.arguments = ["-c", cmd]
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-        try? task.run()
-        task.waitUntilExit()
-        return String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)
     }
 
     private func isNewer(_ remote: String, than current: String) -> Bool {

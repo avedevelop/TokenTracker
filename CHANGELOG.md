@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.6 — May 2026
+
+### Security Fixes
+- **Strict loopback binding** — restricted the widget local server (`LocalServer`) to only listen on local loopback `127.0.0.1` interface rather than all network interfaces.
+- **Removed shell executions** — eliminated vulnerable shell wrappers inside the auto-update checker and keychain CLI credentials reader, replacing them with safe direct process launches using argument arrays.
+- **Deleted cookie decryption logic** — removed unused/obsolete fallback Chrome cookie database decryption routine, eliminating file reads to Application Support and security-sensitive keychain accesses.
+
 ## v1.3.5 — May 2026
 
 ### Fixed

@@ -14,7 +14,7 @@ struct UsageTimelineProvider: TimelineProvider {
     }()
 
     private static func fetchUsage() async -> UsageData {
-        guard let url = URL(string: "http://localhost:51234/usage") else { return .preview }
+        guard let url = URL(string: "http://127.0.0.1:51234/usage") else { return .preview }
         if let (data, response) = try? await URLSession.shared.data(from: url),
            (response as? HTTPURLResponse)?.statusCode == 200,
            let usage = try? decoder.decode(UsageData.self, from: data) {
