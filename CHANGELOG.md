@@ -4,6 +4,11 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.7 — May 2026
+
+### Fixed
+- **Widget stuck/frozen** — added App Transport Security exception `NSAllowsLocalNetworking` for `127.0.0.1` to the Widget Extension, allowing it to correctly connect to the local tracking server and display real-time data instead of remaining frozen.
+
 ## v1.3.6 — May 2026
 
 ### Security Fixes
