@@ -4,6 +4,11 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.8 — May 2026
+
+### Fixed
+- **Local Server crash** — resolved a critical issue where the local tracking server failed to start due to invalid socket configurations on macOS. Connection-level filtering continues to enforce local loopback access exclusively.
+
 ## v1.3.7 — May 2026
 
 ### Fixed

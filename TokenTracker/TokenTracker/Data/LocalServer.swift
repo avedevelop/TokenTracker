@@ -8,7 +8,6 @@ final class LocalServer {
     func start() {
         do {
             let parameters = NWParameters.tcp
-            parameters.requiredLocalEndpoint = NWEndpoint.hostPort(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: LocalServer.port)!)
             listener = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: LocalServer.port)!)
             listener?.newConnectionHandler = { [weak self] conn in
                 if case .hostPort(let host, _) = conn.endpoint {
