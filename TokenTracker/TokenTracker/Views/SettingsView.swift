@@ -74,6 +74,15 @@ struct SettingsView: View {
         }
         .frame(width: 340)
         .onReceive(countdownTimer) { date in now = date }
+        .onAppear {
+            now = Date()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+            now = Date()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            now = Date()
+        }
         .background(
             Button("") { activeTab = .settings }
                 .keyboardShortcut(",", modifiers: .command)

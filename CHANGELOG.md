@@ -4,6 +4,23 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.5 — May 2026
+
+### Fixed
+- **Limit reset timing in app** — remaining time until limit reset now updates instantly when the window appears or becomes active (previously stayed stale for up to 60 seconds).
+
+---
+
+## v1.3.4 — May 2026
+
+### Improved
+- **Claude Code reader performance** — optimized startup and log scans by skipping files that have not been modified since the start of today.
+
+### Fixed
+- Progress KVO observation leak in UpdateChecker — now properly retained as a class property to prevent memory leaks during update checks.
+
+---
+
 ## v1.3.3 — May 2026
 
 ### New features
