@@ -82,6 +82,11 @@ final class ClaudeCodeReader {
         for projectDir in projectDirs {
             let projectName = friendlyProjectName(projectDir.lastPathComponent)
             for fileURL in jsonlFiles(in: projectDir) {
+                if let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
+                   let modificationDate = attrs[.modificationDate] as? Date,
+                   modificationDate < startOfDay {
+                    continue
+                }
                 guard let content = try? String(contentsOf: fileURL, encoding: .utf8) else { continue }
                 for line in content.components(separatedBy: "\n") where !line.isEmpty {
                     guard let data = line.data(using: .utf8),

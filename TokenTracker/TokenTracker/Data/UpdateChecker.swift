@@ -16,6 +16,8 @@ final class UpdateChecker {
     @Published var isInstalling = false
     @Published var downloadProgress: Double = 0
 
+    private var progressObservation: NSKeyValueObservation?
+
     func check() async -> Bool {
         guard let apiURL = URL(string: apiURLString) else { return false }
         var request = URLRequest(url: apiURL)
@@ -86,10 +88,9 @@ final class UpdateChecker {
             }
         }
 
-        let observation = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
+        progressObservation = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
             Task { @MainActor [weak self] in self?.downloadProgress = progress.fractionCompleted }
         }
-        _ = observation
         task.resume()
     }
 
