@@ -6,7 +6,7 @@ import Combine
 final class UpdateChecker {
     static let shared = UpdateChecker()
 
-    private let apiURLString = "https://api.github.com/repos/bvsmma/TokenTracker/releases/latest"
+    private let apiURLString = "https://api.github.com/repos/avedevelop/TokenTracker/releases/latest"
 
     private(set) var availableVersion: String?
     private(set) var releaseURL: URL?
@@ -49,7 +49,7 @@ final class UpdateChecker {
         }
         if dmgURL == nil {
             let ver = tag.trimmingCharacters(in: CharacterSet(charactersIn: "v"))
-            dmgURL = URL(string: "https://github.com/bvsmma/TokenTracker/releases/download/\(tag)/TokenTracker-\(ver).dmg")
+            dmgURL = URL(string: "https://github.com/avedevelop/TokenTracker/releases/download/\(tag)/TokenTracker-\(ver).dmg")
         }
         return true
     }

@@ -118,11 +118,11 @@ struct LoginView: View {
                     .padding(.bottom, 12)
 
                 HStack(spacing: 16) {
-                    footerLink("FAQ", url: "https://github.com/bvsmma/TokenTracker/blob/main/FAQ.md")
+                    footerLink("FAQ", url: "https://github.com/avedevelop/TokenTracker/blob/main/FAQ.md")
                     Text("·").foregroundStyle(.white.opacity(0.15)).font(.system(size: 10))
-                    footerLink(L10n.s("Условия", "Terms"), url: "https://github.com/bvsmma/TokenTracker/blob/main/TERMS.md")
+                    footerLink(L10n.s("Условия", "Terms"), url: "https://github.com/avedevelop/TokenTracker/blob/main/TERMS.md")
                     Text("·").foregroundStyle(.white.opacity(0.15)).font(.system(size: 10))
-                    footerLink("GitHub", url: "https://github.com/bvsmma/TokenTracker")
+                    footerLink("GitHub", url: "https://github.com/avedevelop/TokenTracker")
                 }
                 .padding(.bottom, 4)
             }

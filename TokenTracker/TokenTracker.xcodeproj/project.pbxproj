@@ -498,7 +498,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/bvsmma/TokenTracker/main/appcast.xml";
+				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/avedevelop/TokenTracker/main/appcast.xml";
 				INFOPLIST_KEY_SUPublicEDKey = "6XX7hOUdXUl0Q36AZRGrE2NTwCByev1eBN0W80TwVJI=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -542,7 +542,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/bvsmma/TokenTracker/main/appcast.xml";
+				INFOPLIST_KEY_SUFeedURL = "https://raw.githubusercontent.com/avedevelop/TokenTracker/main/appcast.xml";
 				INFOPLIST_KEY_SUPublicEDKey = "6XX7hOUdXUl0Q36AZRGrE2NTwCByev1eBN0W80TwVJI=";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

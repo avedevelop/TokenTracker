@@ -942,15 +942,15 @@ struct SettingsView: View {
                 VStack(spacing: 6) {
                     HStack(spacing: 6) {
                         linkChip(L10n.viewOnGitHub, icon: "arrow.up.right.square",
-                                 url: "https://github.com/bvsmma/TokenTracker")
+                                 url: "https://github.com/avedevelop/TokenTracker")
                         linkChip(L10n.starOnGitHub, icon: "star",
-                                 url: "https://github.com/bvsmma/TokenTracker")
+                                 url: "https://github.com/avedevelop/TokenTracker")
                     }
                     HStack(spacing: 6) {
                         linkChip("FAQ", icon: "questionmark.circle",
-                                 url: "https://github.com/bvsmma/TokenTracker/blob/main/FAQ.md")
+                                 url: "https://github.com/avedevelop/TokenTracker/blob/main/FAQ.md")
                         linkChip(L10n.s("Условия", "Terms"), icon: "doc.text",
-                                 url: "https://github.com/bvsmma/TokenTracker/blob/main/TERMS.md")
+                                 url: "https://github.com/avedevelop/TokenTracker/blob/main/TERMS.md")
                     }
                     checkUpdatesButton
                 }
