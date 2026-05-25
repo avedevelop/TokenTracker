@@ -4,6 +4,11 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.3.9 — May 2026
+
+### Changed
+- Updated GitHub owner links in the app, Sparkle feed, release downloads, FAQ, Terms, and repository actions after the account rename.
+
 ## v1.3.8 — May 2026
 
 ### Fixed
@@ -71,7 +76,7 @@ All notable changes to TokenTracker are documented here.
 ### New features
 - **Sparkle auto-updates** — native update dialog via `SPUStandardUpdaterController`; app checks for updates on launch and prompts with release notes. Updates verified with EdDSA signature (no Apple Developer account required).
 - **Check for Updates** menu item added to the app menu (Cmd+U)
-- **Homebrew tap** — install and update via `brew tap bvsmma/tap && brew install --cask tokentracker`
+- **Homebrew tap** — install and update via `brew tap avedevelop/tap && brew install --cask tokentracker`
 - **Auto-download in update banner** — "Download" button in the About section fetches the DMG directly to `~/Downloads` with a progress bar and opens it automatically
 
 ---

@@ -31,7 +31,7 @@ class WindowDelegate: NSObject, NSWindowDelegate {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     var statusItem: NSStatusItem!
     var popover: NSPopover!
     var mainWindow: NSWindow?
@@ -54,7 +54,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSApplication.shared.setActivationPolicy(.regular)
-        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
         setupStatusItem()
         orchestrator.start()
         Task { await NotificationManager.shared.requestPermission() }
@@ -108,6 +108,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         orchestrator.stop()
+    }
+
+    func feedURLString(for updater: SPUUpdater) -> String? {
+        "https://raw.githubusercontent.com/avedevelop/TokenTracker/main/appcast.xml"
     }
 
     // MARK: Status Item (optional menu bar icon)

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleExecutable</key>
+  <string>TokenTracker</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
+  <key>CFBundleIconName</key>
+  <string>AppIcon</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.tokentracker.TokenTracker</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>TokenTracker</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$(MARKETING_VERSION)</string>
+  <key>CFBundleSupportedPlatforms</key>
+  <array>
+    <string>MacOSX</string>
+  </array>
+  <key>CFBundleVersion</key>
+  <string>$(CURRENT_PROJECT_VERSION)</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+  <key>SUFeedURL</key>
+  <string>https://raw.githubusercontent.com/avedevelop/TokenTracker/main/appcast.xml</string>
+  <key>SUPublicEDKey</key>
+  <string>6XX7hOUdXUl0Q36AZRGrE2NTwCByev1eBN0W80TwVJI=</string>
+</dict>
+</plist>
