@@ -14,7 +14,7 @@ struct SettingsView: View {
     @State private var historyDays: Int = 7
     @State private var historyMetric: HistoryMetric = .cost
 
-    enum HistoryMetric { case cost, fiveHour }
+    enum HistoryMetric: Equatable { case cost, fiveHour }
 
     @AppStorage("appColorScheme") private var appColorScheme: String = "dark"
     @Environment(\.colorScheme) private var colorScheme
@@ -34,7 +34,7 @@ struct SettingsView: View {
         var label: String {
             switch self {
             case .dashboard: return L10n.dashboard
-            case .history:   return L10n.s("История", "History")
+            case .history:   return L10n.s("Инсайты", "Insights")
             case .account:   return L10n.account
             case .settings:  return L10n.settings
             }
@@ -43,7 +43,7 @@ struct SettingsView: View {
         var icon: String {
             switch self {
             case .dashboard: return "chart.bar.fill"
-            case .history:   return "calendar"
+            case .history:   return "chart.xyaxis.line"
             case .account:   return "person.fill"
             case .settings:  return "gearshape.fill"
             }
@@ -1186,168 +1186,12 @@ struct SettingsView: View {
     // MARK: - Tab: History
 
     private var historyTab: some View {
-        let records = Array(HistoryStore.shared.load().suffix(historyDays))
-        return Group {
-            HStack(spacing: 6) {
-                ForEach([7, 30, 90], id: \.self) { d in
-                    Button {
-                        historyDays = d
-                    } label: {
-                        Text("\(d) \(L10n.s("дн", "d"))")
-                            .font(.system(size: 12, weight: historyDays == d ? .semibold : .regular))
-                            .foregroundStyle(historyDays == d ? textPrimary : textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(historyDays == d
-                                        ? (isDark ? Color.white.opacity(0.12) : Color.accentColor.opacity(0.12))
-                                        : (isDark ? Color.white.opacity(0.04) : Color(.controlBackgroundColor)))
-                                    .overlay(RoundedRectangle(cornerRadius: 10)
-                                        .strokeBorder(historyDays == d
-                                            ? (isDark ? Color.white.opacity(0.2) : Color.accentColor.opacity(0.3))
-                                            : Color.clear, lineWidth: 0.5))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-
-            if records.isEmpty {
-                DarkCard {
-                    VStack(spacing: 8) {
-                        Image(systemName: "calendar.badge.clock")
-                            .font(.system(size: 28))
-                            .foregroundStyle(textTertiary)
-                        Text(L10n.s("История появится после первого дня использования", "History appears after your first day of usage"))
-                            .font(.system(size: 12))
-                            .foregroundStyle(textTertiary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                }
-            } else {
-                DarkCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("\(historyDays) \(L10n.s("дн.", "days"))")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(textSecondary)
-                                let total = records.map(\.cost).reduce(0, +)
-                                Text("$\(String(format: "%.2f", total))")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                    .foregroundStyle(textPrimary)
-                            }
-                            Spacer()
-                            Button {
-                                exportCSV(records: records)
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: exportedCSV ? "checkmark" : "square.and.arrow.up")
-                                        .font(.system(size: 11))
-                                    Text(exportedCSV ? L10n.s("Экспортировано", "Exported") : "CSV")
-                                        .font(.system(size: 11, weight: .medium))
-                                }
-                                .foregroundStyle(textSecondary)
-                                .padding(.horizontal, 10).padding(.vertical, 5)
-                                .overlay(Capsule().strokeBorder(isDark ? .white.opacity(0.2) : Color(.separatorColor).opacity(0.7), lineWidth: 0.5))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        // Metric picker: Cost / 5h limit
-                    HStack(spacing: 6) {
-                        Button {
-                            historyMetric = .cost
-                        } label: {
-                            Text(L10n.cost)
-                                .font(.system(size: 11, weight: historyMetric == .cost ? .semibold : .regular))
-                                .foregroundStyle(historyMetric == .cost ? textPrimary : textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(historyMetric == .cost
-                                            ? (isDark ? Color.white.opacity(0.12) : Color.accentColor.opacity(0.12))
-                                            : (isDark ? Color.white.opacity(0.04) : Color(.controlBackgroundColor)))
-                                        .overlay(RoundedRectangle(cornerRadius: 8)
-                                            .strokeBorder(historyMetric == .cost
-                                                ? (isDark ? Color.white.opacity(0.2) : Color.accentColor.opacity(0.3))
-                                                : Color.clear, lineWidth: 0.5))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                        Button {
-                            historyMetric = .fiveHour
-                        } label: {
-                            Text(L10n.s("5ч лимит", "5h limit"))
-                                .font(.system(size: 11, weight: historyMetric == .fiveHour ? .semibold : .regular))
-                                .foregroundStyle(historyMetric == .fiveHour ? textPrimary : textSecondary)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .fill(historyMetric == .fiveHour
-                                            ? (isDark ? Color.white.opacity(0.12) : Color.accentColor.opacity(0.12))
-                                            : (isDark ? Color.white.opacity(0.04) : Color(.controlBackgroundColor)))
-                                        .overlay(RoundedRectangle(cornerRadius: 8)
-                                            .strokeBorder(historyMetric == .fiveHour
-                                                ? (isDark ? Color.white.opacity(0.2) : Color.accentColor.opacity(0.3))
-                                                : Color.clear, lineWidth: 0.5))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    if historyMetric == .cost {
-                        WeeklyBarChart(records: records)
-                            .frame(height: 60)
-                    } else {
-                        LimitBarChart(records: records)
-                            .frame(height: 60)
-                    }
-                    }
-                }
-
-                ForEach(records.reversed()) { record in
-                    DarkCard {
-                        VStack(spacing: 8) {
-                            HStack {
-                                Text(formatHistoryDate(record.date))
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(textPrimary)
-                                Spacer()
-                                Text("$\(String(format: "%.2f", record.cost))")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundStyle(textPrimary)
-                            }
-                            Divider()
-                            HStack(spacing: 0) {
-                                historyStatCell(L10n.s("Токены", "Tokens"), formatTokens(record.tokens), icon: "cpu")
-                                historyStatCell(L10n.s("Сессии", "Sessions"), "\(record.sessions)", icon: "terminal")
-                                historyStatCell(L10n.s("5ч макс", "5h max"), "\(Int(record.maxFiveHourPct))%", icon: "gauge.with.dots.needle.67percent")
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func historyStatCell(_ label: String, _ value: String, icon: String) -> some View {
-        VStack(spacing: 3) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundStyle(textTertiary)
-            Text(value)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(textPrimary.opacity(0.8))
-            Text(label)
-                .font(.system(size: 9))
-                .foregroundStyle(textTertiary)
-        }
-        .frame(maxWidth: .infinity)
+        InsightsView(
+            historyDays: $historyDays,
+            historyMetric: $historyMetric,
+            exportedCSV: exportedCSV,
+            onExport: exportCSV(records:)
+        )
     }
 
     private func exportCSV(records: [DayRecord]) {
@@ -1368,15 +1212,6 @@ struct SettingsView: View {
         }
     }
 
-    private func formatHistoryDate(_ dateStr: String) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        guard let date = formatter.date(from: dateStr) else { return dateStr }
-        let display = DateFormatter()
-        display.dateStyle = .medium
-        display.timeStyle = .none
-        return display.string(from: date)
-    }
 }
 
 // MARK: - Notifications Card (uses @AppStorage)

@@ -142,6 +142,31 @@ final class UsageAnalyticsTests: XCTestCase {
         XCTAssertEqual(record.date, "2026-06-03")
         XCTAssertNil(record.projects)
     }
+
+    func test_insightsPeriodDataSplitsCurrentAndPreviousPeriods() {
+        let records = (1...6).map { day in
+            DayRecord(
+                date: String(format: "2026-06-%02d", day),
+                cost: Double(day),
+                tokens: day * 100,
+                sessions: day,
+                cacheHitRate: 0,
+                maxFiveHourPct: Double(day * 10),
+                maxWeeklyPct: 0,
+                projects: nil
+            )
+        }
+
+        let data = InsightsPeriodData(records: records, periodDays: 3)
+
+        XCTAssertEqual(data.selectedRecords.map(\.date), ["2026-06-04", "2026-06-05", "2026-06-06"])
+        XCTAssertEqual(data.previousRecords.map(\.date), ["2026-06-01", "2026-06-02", "2026-06-03"])
+        XCTAssertEqual(data.totalCost, 15, accuracy: 0.001)
+        XCTAssertEqual(data.totalTokens, 1500)
+        XCTAssertEqual(data.totalSessions, 15)
+        XCTAssertEqual(data.peakFiveHourPct, 60, accuracy: 0.001)
+        XCTAssertEqual(data.costComparison.delta, 9, accuracy: 0.001)
+    }
 }
 
 private extension UsageData {
