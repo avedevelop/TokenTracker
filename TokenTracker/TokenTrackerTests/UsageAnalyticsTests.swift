@@ -167,6 +167,23 @@ final class UsageAnalyticsTests: XCTestCase {
         XCTAssertEqual(data.peakFiveHourPct, 60, accuracy: 0.001)
         XCTAssertEqual(data.costComparison.delta, 9, accuracy: 0.001)
     }
+
+    func test_insightsPeriodDataUsesCalendarWindowsForSparseHistory() {
+        let records = [
+            makeRecord(date: "2026-05-01", cost: 100, tokens: 10000, sessions: 10),
+            makeRecord(date: "2026-05-26", cost: 2, tokens: 200, sessions: 2),
+            makeRecord(date: "2026-05-30", cost: 3, tokens: 300, sessions: 3),
+            makeRecord(date: "2026-06-01", cost: 5, tokens: 500, sessions: 5),
+            makeRecord(date: "2026-06-03", cost: 7, tokens: 700, sessions: 7)
+        ]
+
+        let data = InsightsPeriodData(records: records, periodDays: 7)
+
+        XCTAssertEqual(data.selectedRecords.map(\.date), ["2026-06-01", "2026-06-03"])
+        XCTAssertEqual(data.previousRecords.map(\.date), ["2026-05-26", "2026-05-30"])
+        XCTAssertEqual(data.totalCost, 12, accuracy: 0.001)
+        XCTAssertEqual(data.costComparison.previous, 5, accuracy: 0.001)
+    }
 }
 
 private extension UsageData {
@@ -176,4 +193,17 @@ private extension UsageData {
         copy.limitsUpdatedAt = Date()
         return copy
     }
+}
+
+private func makeRecord(date: String, cost: Double, tokens: Int, sessions: Int) -> DayRecord {
+    DayRecord(
+        date: date,
+        cost: cost,
+        tokens: tokens,
+        sessions: sessions,
+        cacheHitRate: 0,
+        maxFiveHourPct: 0,
+        maxWeeklyPct: 0,
+        projects: nil
+    )
 }

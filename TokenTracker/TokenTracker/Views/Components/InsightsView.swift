@@ -13,21 +13,19 @@ struct InsightsView: View {
     private var textSecondary: Color { isDark ? .white.opacity(0.45) : .secondary }
     private var textTertiary: Color { isDark ? .white.opacity(0.28) : Color(.tertiaryLabelColor) }
 
-    private var data: InsightsPeriodData {
-        InsightsPeriodData(records: HistoryStore.shared.load(), periodDays: historyDays)
-    }
-
     var body: some View {
-        Group {
+        let data = InsightsPeriodData(records: HistoryStore.shared.load(), periodDays: historyDays)
+
+        return Group {
             periodSelector
 
             if data.selectedRecords.isEmpty {
                 emptyState
             } else {
-                overviewCard
-                comparisonCard
-                chartCard
-                dailyRecords
+                overviewCard(data)
+                comparisonCard(data)
+                chartCard(data)
+                dailyRecords(data)
             }
         }
     }
@@ -45,7 +43,7 @@ struct InsightsView: View {
         }
     }
 
-    private var overviewCard: some View {
+    private func overviewCard(_ data: InsightsPeriodData) -> some View {
         DarkCard {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
@@ -94,7 +92,7 @@ struct InsightsView: View {
         }
     }
 
-    private var comparisonCard: some View {
+    private func comparisonCard(_ data: InsightsPeriodData) -> some View {
         DarkCard {
             VStack(alignment: .leading, spacing: 10) {
                 Text(L10n.s("Сравнение", "Comparison"))
@@ -106,28 +104,31 @@ struct InsightsView: View {
                         label: L10n.cost,
                         value: formatCurrency(data.costComparison.current),
                         comparison: data.costComparison,
-                        icon: "dollarsign.circle"
+                        icon: "dollarsign.circle",
+                        deltaStyle: .currency
                     )
                     Divider()
                     comparisonRow(
                         label: L10n.s("Токены", "Tokens"),
                         value: formatTokens(Int(data.tokensComparison.current)),
                         comparison: data.tokensComparison,
-                        icon: "cpu"
+                        icon: "cpu",
+                        deltaStyle: .tokens
                     )
                     Divider()
                     comparisonRow(
                         label: L10n.s("Сессии", "Sessions"),
                         value: "\(Int(data.sessionsComparison.current))",
                         comparison: data.sessionsComparison,
-                        icon: "terminal"
+                        icon: "terminal",
+                        deltaStyle: .count
                     )
                 }
             }
         }
     }
 
-    private var chartCard: some View {
+    private func chartCard(_ data: InsightsPeriodData) -> some View {
         DarkCard {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 6) {
@@ -150,7 +151,7 @@ struct InsightsView: View {
         }
     }
 
-    private var dailyRecords: some View {
+    private func dailyRecords(_ data: InsightsPeriodData) -> some View {
         ForEach(data.selectedRecords.reversed()) { record in
             DarkCard {
                 VStack(spacing: 8) {
@@ -263,7 +264,13 @@ struct InsightsView: View {
         )
     }
 
-    private func comparisonRow(label: String, value: String, comparison: PeriodComparison, icon: String) -> some View {
+    private func comparisonRow(
+        label: String,
+        value: String,
+        comparison: PeriodComparison,
+        icon: String,
+        deltaStyle: ComparisonDeltaStyle
+    ) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 12))
@@ -283,16 +290,16 @@ struct InsightsView: View {
 
             Spacer(minLength: 8)
 
-            comparisonBadge(comparison)
+            comparisonBadge(comparison, style: deltaStyle)
         }
     }
 
-    private func comparisonBadge(_ comparison: PeriodComparison) -> some View {
+    private func comparisonBadge(_ comparison: PeriodComparison, style: ComparisonDeltaStyle) -> some View {
         let positive = comparison.delta > 0
         let neutral = abs(comparison.delta) < 0.001
         let color: Color = neutral ? textTertiary : (positive ? .orange : .green)
         let symbol = neutral ? "minus" : (positive ? "arrow.up.right" : "arrow.down.right")
-        let label = comparison.percentChange.map { "\(Int(abs($0).rounded()))%" } ?? formatSignedDelta(comparison.delta)
+        let label = comparison.percentChange.map { "\(Int(abs($0).rounded()))%" } ?? formatDelta(comparison.delta, style: style)
 
         return HStack(spacing: 4) {
             Image(systemName: symbol)
@@ -337,9 +344,15 @@ struct InsightsView: View {
             : value >= 1000 ? "\(value / 1000)K" : "\(value)"
     }
 
-    private func formatSignedDelta(_ value: Double) -> String {
-        let rounded = Int(abs(value).rounded())
-        return rounded == 0 ? "0" : "\(rounded)"
+    private func formatDelta(_ value: Double, style: ComparisonDeltaStyle) -> String {
+        switch style {
+        case .currency:
+            return formatCurrency(abs(value))
+        case .tokens:
+            return formatTokens(Int(abs(value).rounded()))
+        case .count:
+            return "\(Int(abs(value).rounded()))"
+        }
     }
 
     private func formatHistoryDate(_ dateStr: String) -> String {
@@ -353,6 +366,12 @@ struct InsightsView: View {
     }
 }
 
+enum ComparisonDeltaStyle {
+    case currency
+    case tokens
+    case count
+}
+
 struct InsightsPeriodData {
     let selectedRecords: [DayRecord]
     let previousRecords: [DayRecord]
@@ -362,8 +381,25 @@ struct InsightsPeriodData {
 
     init(records: [DayRecord], periodDays: Int) {
         let sorted = records.sorted { $0.date < $1.date }
-        selectedRecords = Array(sorted.suffix(periodDays))
-        previousRecords = Array(sorted.dropLast(selectedRecords.count).suffix(periodDays))
+        let parsed = sorted.compactMap { record -> (record: DayRecord, day: Date)? in
+            guard let day = Self.dateFormatter.date(from: record.date) else { return nil }
+            return (record, Self.calendar.startOfDay(for: day))
+        }
+
+        if let anchor = parsed.last?.day,
+           let selectedStart = Self.calendar.date(byAdding: .day, value: -(periodDays - 1), to: anchor),
+           let previousStart = Self.calendar.date(byAdding: .day, value: -periodDays, to: selectedStart) {
+            selectedRecords = parsed
+                .filter { $0.day >= selectedStart && $0.day <= anchor }
+                .map(\.record)
+            previousRecords = parsed
+                .filter { $0.day >= previousStart && $0.day < selectedStart }
+                .map(\.record)
+        } else {
+            selectedRecords = Array(sorted.suffix(periodDays))
+            previousRecords = Array(sorted.dropLast(selectedRecords.count).suffix(periodDays))
+        }
+
         costComparison = UsageAnalytics.compare(
             current: selectedRecords.map(\.cost).reduce(0, +),
             previous: previousRecords.map(\.cost).reduce(0, +)
@@ -393,4 +429,14 @@ struct InsightsPeriodData {
     var peakFiveHourPct: Double {
         selectedRecords.map(\.maxFiveHourPct).max() ?? 0
     }
+
+    private static let calendar = Calendar(identifier: .gregorian)
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }
