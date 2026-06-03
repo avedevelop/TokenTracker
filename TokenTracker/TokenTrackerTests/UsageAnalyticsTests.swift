@@ -21,11 +21,11 @@ final class UsageAnalyticsTests: XCTestCase {
         XCTAssertEqual(status.primaryMetric, .fiveHour)
     }
 
-    func test_usageStatus_isWatchWhenBurnRateIsHigh() {
+    func test_usageStatus_isWatchWhenProjectedExhaustionIsBeforeReset() {
         let now = Date()
         let limits = UsageData.Limits(
-            fiveHourUtilization: 72,
-            fiveHourResetsAt: now.addingTimeInterval(4 * 3600),
+            fiveHourUtilization: 65,
+            fiveHourResetsAt: now.addingTimeInterval(4.5 * 3600),
             weeklyUtilization: 18,
             weeklyResetsAt: now.addingTimeInterval(2 * 86400),
             sonnetUtilization: nil,

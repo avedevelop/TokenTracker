@@ -73,7 +73,7 @@ enum UsageAnalytics {
         let burnPerHour = limits.fiveHourUtilization / max(5 - hoursUntilReset, 1)
         guard burnPerHour > 0 else { return false }
         let hoursToExhaustion = remaining / burnPerHour
-        return hoursToExhaustion < hoursUntilReset && limits.fiveHourUtilization >= watchFiveHourThreshold
+        return hoursToExhaustion < hoursUntilReset
     }
 }
 
