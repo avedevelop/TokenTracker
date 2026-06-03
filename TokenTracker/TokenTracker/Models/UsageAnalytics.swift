@@ -126,8 +126,9 @@ extension UsageAnalytics {
     }
 
     static func projectInsights(current: [ProjectUsage], previous: [ProjectUsage]) -> [ProjectInsight] {
-        let previousByName = Dictionary(uniqueKeysWithValues: previous.map { ($0.name, $0) })
-        return current.map { project in
+        let currentProjects = aggregateProjects(current)
+        let previousByName = Dictionary(uniqueKeysWithValues: aggregateProjects(previous).map { ($0.name, $0) })
+        return currentProjects.map { project in
             let old = previousByName[project.name] ?? ProjectUsage(name: project.name, tokens: 0, cost: 0)
             let tokenComparison = compare(current: Double(project.tokens), previous: Double(old.tokens))
             let costComparison = compare(current: project.cost, previous: old.cost)
@@ -141,12 +142,22 @@ extension UsageAnalytics {
         }
     }
 
+    private static func aggregateProjects(_ projects: [ProjectUsage]) -> [ProjectUsage] {
+        let totals = projects.reduce(into: [String: (tokens: Int, cost: Double)]()) { result, project in
+            result[project.name, default: (tokens: 0, cost: 0)].tokens += project.tokens
+            result[project.name, default: (tokens: 0, cost: 0)].cost += project.cost
+        }
+        return totals.map { name, total in
+            ProjectUsage(name: name, tokens: total.tokens, cost: total.cost)
+        }
+    }
+
     private static func isSpike(current: ProjectUsage, previous: ProjectUsage) -> Bool {
         guard previous.cost >= 0.10 || previous.tokens >= 1_000 else {
             return current.cost >= 1.0 || current.tokens >= 10_000
         }
         let costSpike = current.cost >= previous.cost * 1.5 && current.cost - previous.cost >= 0.25
-        let tokenSpike = current.tokens >= Int(Double(previous.tokens) * 1.5) && current.tokens - previous.tokens >= 2_000
+        let tokenSpike = Double(current.tokens) >= Double(previous.tokens) * 1.5 && current.tokens - previous.tokens >= 2_000
         return costSpike || tokenSpike
     }
 }

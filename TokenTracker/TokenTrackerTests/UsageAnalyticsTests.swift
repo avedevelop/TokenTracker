@@ -91,6 +91,57 @@ final class UsageAnalyticsTests: XCTestCase {
         XCTAssertTrue(insights[0].isSpike)
         XCTAssertEqual(insights[0].cost.delta, 2.0, accuracy: 0.001)
     }
+
+    func test_projectInsights_aggregatesDuplicateProjectNames() {
+        let current = [
+            ProjectUsage(name: "TokenTracker", tokens: 7_000, cost: 1.20),
+            ProjectUsage(name: "TokenTracker", tokens: 3_000, cost: 0.80)
+        ]
+        let previous = [
+            ProjectUsage(name: "TokenTracker", tokens: 4_000, cost: 0.50),
+            ProjectUsage(name: "TokenTracker", tokens: 1_000, cost: 0.50)
+        ]
+
+        let insights = UsageAnalytics.projectInsights(current: current, previous: previous)
+
+        XCTAssertEqual(insights.count, 1)
+        XCTAssertEqual(insights[0].tokens.current, 10_000, accuracy: 0.001)
+        XCTAssertEqual(insights[0].tokens.previous, 5_000, accuracy: 0.001)
+        XCTAssertEqual(insights[0].cost.current, 2.00, accuracy: 0.001)
+        XCTAssertEqual(insights[0].cost.previous, 1.00, accuracy: 0.001)
+    }
+
+    func test_projectInsights_doesNotRoundTokenThresholdIntoSpike() {
+        let current = [
+            ProjectUsage(name: "Boundary", tokens: 6_001, cost: 0.20)
+        ]
+        let previous = [
+            ProjectUsage(name: "Boundary", tokens: 4_001, cost: 0.20)
+        ]
+
+        let insights = UsageAnalytics.projectInsights(current: current, previous: previous)
+
+        XCTAssertFalse(insights[0].isSpike)
+    }
+
+    func test_dayRecord_decodesOldJSONWithoutProjects() throws {
+        let json = """
+        {
+          "date": "2026-06-03",
+          "cost": 1.25,
+          "tokens": 12000,
+          "sessions": 3,
+          "cacheHitRate": 0.42,
+          "maxFiveHourPct": 66,
+          "maxWeeklyPct": 12
+        }
+        """
+
+        let record = try JSONDecoder().decode(DayRecord.self, from: Data(json.utf8))
+
+        XCTAssertEqual(record.date, "2026-06-03")
+        XCTAssertNil(record.projects)
+    }
 }
 
 private extension UsageData {
