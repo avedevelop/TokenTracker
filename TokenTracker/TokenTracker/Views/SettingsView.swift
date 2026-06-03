@@ -213,11 +213,31 @@ struct SettingsView: View {
     // MARK: - Tab: Dashboard
 
     private var dashboardTab: some View {
-        Group {
-            limitsSection
+        let history = HistoryStore.shared.load()
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: now)
+        let previousProjects = history.reversed().first { $0.date != today && $0.projects != nil }?.projects ?? []
+        return Group {
+            SmartStatusCard(
+                status: UsageAnalytics.status(for: orchestrator.usage, history: history, now: now),
+                updatedAt: orchestrator.usage.limitsUpdatedAt ?? orchestrator.usage.tokensUpdatedAt
+            )
+            LimitIntelligenceCard(
+                limits: orchestrator.usage.limits,
+                updatedAt: orchestrator.usage.limitsUpdatedAt,
+                isLoggedIn: orchestrator.isLoggedIn,
+                hasOrgId: !(accountStore.activeProfile?.orgId ?? "").isEmpty,
+                now: now
+            )
             statsSection
             chartSection
-            projectsSection
+            ProjectInsightsCard(
+                insights: UsageAnalytics.projectInsights(
+                    current: orchestrator.usage.topProjects,
+                    previous: previousProjects
+                )
+            )
         }
     }
 
