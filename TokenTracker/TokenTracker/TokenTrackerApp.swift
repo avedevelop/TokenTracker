@@ -33,7 +33,7 @@ class WindowDelegate: NSObject, NSWindowDelegate {
 
 class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     var statusItem: NSStatusItem!
-    var popover: NSPopover!
+    var popover: NSPopover?
     var mainWindow: NSWindow?
     private let windowDelegate = WindowDelegate()
     let orchestrator = AppOrchestrator()
@@ -130,16 +130,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             button.target = self
             button.action = #selector(statusItemClicked)
         }
+
+        let dashboard = MenuBarDashboardView(
+            orchestrator: orchestrator,
+            onSync: { [weak self] in
+                self?.orchestrator.forceRefresh()
+            },
+            onOpen: { [weak self] in
+                self?.closeStatusPopover()
+                self?.showMainWindow()
+            },
+            onInsights: { [weak self] in
+                self?.closeStatusPopover()
+                self?.showMainWindow()
+            }
+        )
+
+        let hostingController = NSHostingController(rootView: dashboard)
+        hostingController.preferredContentSize = NSSize(width: 260, height: 304)
+
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentSize = NSSize(width: 260, height: 304)
+        popover.contentViewController = hostingController
+        self.popover = popover
     }
 
     func removeStatusItem() {
         guard let item = statusItem else { return }
+        closeStatusPopover()
+        popover?.contentViewController = nil
+        popover = nil
         NSStatusBar.system.removeStatusItem(item)
         statusItem = nil
     }
 
     @objc func statusItemClicked() {
-        showMainWindow()
+        toggleStatusPopover()
     }
 
     func setShowMenuBarIcon(_ show: Bool) {
@@ -150,6 +177,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     func updateStatusTitle(_ pct: Double) {
         guard let button = statusItem?.button else { return }
         button.title = pct == 0 ? "◆" : "\(Int(pct))%"
+    }
+
+    private func toggleStatusPopover() {
+        guard let button = statusItem?.button, let popover else { return }
+        if popover.isShown {
+            closeStatusPopover()
+        } else {
+            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.contentViewController?.view.window?.makeKey()
+        }
+    }
+
+    private func closeStatusPopover() {
+        popover?.performClose(nil)
     }
 
     // MARK: Menus
