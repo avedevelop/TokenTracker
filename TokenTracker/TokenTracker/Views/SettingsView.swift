@@ -83,6 +83,21 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             now = Date()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .tokenTrackerOpenTab)) { notification in
+            guard let tab = notification.userInfo?["tab"] as? String else { return }
+            switch tab {
+            case "dashboard":
+                activeTab = .dashboard
+            case "insights":
+                activeTab = .history
+            case "account":
+                activeTab = .account
+            case "settings":
+                activeTab = .settings
+            default:
+                break
+            }
+        }
         .background(
             Button("") { activeTab = .settings }
                 .keyboardShortcut(",", modifiers: .command)

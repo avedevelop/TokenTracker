@@ -3,6 +3,10 @@ import Combine
 import AppKit
 import Sparkle
 
+extension Notification.Name {
+    static let tokenTrackerOpenTab = Notification.Name("TokenTrackerOpenTab")
+}
+
 @main
 struct TokenTrackerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -69,7 +73,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
 
     // MARK: Window (single instance)
 
-    func showMainWindow() {
+    func showMainWindow(tab: String? = nil) {
         if mainWindow == nil {
             let win = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 340, height: 580),
@@ -97,6 +101,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
         }
         mainWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        if let tab {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: .tokenTrackerOpenTab,
+                    object: nil,
+                    userInfo: ["tab": tab]
+                )
+            }
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
@@ -138,11 +151,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
             },
             onOpen: { [weak self] in
                 self?.closeStatusPopover()
-                self?.showMainWindow()
+                self?.showMainWindow(tab: "dashboard")
             },
             onInsights: { [weak self] in
                 self?.closeStatusPopover()
-                self?.showMainWindow()
+                self?.showMainWindow(tab: "insights")
             }
         )
 
