@@ -99,3 +99,54 @@ struct UsageStatus: Equatable {
     let reason: String
     let recommendation: String
 }
+
+struct PeriodComparison: Equatable {
+    let current: Double
+    let previous: Double
+    let delta: Double
+    let percentChange: Double?
+}
+
+struct ProjectInsight: Identifiable, Equatable {
+    var id: String { name }
+    let name: String
+    let tokens: PeriodComparison
+    let cost: PeriodComparison
+    let isSpike: Bool
+}
+
+extension UsageAnalytics {
+    static func compare(current: Double, previous: Double) -> PeriodComparison {
+        PeriodComparison(
+            current: current,
+            previous: previous,
+            delta: current - previous,
+            percentChange: previous == 0 ? nil : ((current - previous) / previous) * 100
+        )
+    }
+
+    static func projectInsights(current: [ProjectUsage], previous: [ProjectUsage]) -> [ProjectInsight] {
+        let previousByName = Dictionary(uniqueKeysWithValues: previous.map { ($0.name, $0) })
+        return current.map { project in
+            let old = previousByName[project.name] ?? ProjectUsage(name: project.name, tokens: 0, cost: 0)
+            let tokenComparison = compare(current: Double(project.tokens), previous: Double(old.tokens))
+            let costComparison = compare(current: project.cost, previous: old.cost)
+            let spike = isSpike(current: project, previous: old)
+            return ProjectInsight(name: project.name, tokens: tokenComparison, cost: costComparison, isSpike: spike)
+        }
+        .sorted { lhs, rhs in
+            lhs.cost.current == rhs.cost.current
+                ? lhs.tokens.current > rhs.tokens.current
+                : lhs.cost.current > rhs.cost.current
+        }
+    }
+
+    private static func isSpike(current: ProjectUsage, previous: ProjectUsage) -> Bool {
+        guard previous.cost >= 0.10 || previous.tokens >= 1_000 else {
+            return current.cost >= 1.0 || current.tokens >= 10_000
+        }
+        let costSpike = current.cost >= previous.cost * 1.5 && current.cost - previous.cost >= 0.25
+        let tokenSpike = current.tokens >= Int(Double(previous.tokens) * 1.5) && current.tokens - previous.tokens >= 2_000
+        return costSpike || tokenSpike
+    }
+}

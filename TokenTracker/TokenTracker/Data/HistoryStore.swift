@@ -9,6 +9,7 @@ struct DayRecord: Codable, Identifiable {
     let cacheHitRate: Double
     let maxFiveHourPct: Double
     let maxWeeklyPct: Double
+    let projects: [ProjectUsage]?
 }
 
 final class HistoryStore {
@@ -49,7 +50,8 @@ final class HistoryStore {
             sessions: usage.sessionsToday,
             cacheHitRate: usage.cacheHitRate,
             maxFiveHourPct: limits?.fiveHourUtilization ?? 0,
-            maxWeeklyPct: limits?.weeklyUtilization ?? 0
+            maxWeeklyPct: limits?.weeklyUtilization ?? 0,
+            projects: usage.topProjects
         )
         shared.save(snapshot: record)
     }
