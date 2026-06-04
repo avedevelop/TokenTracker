@@ -10,9 +10,11 @@
 ---
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" width="240" alt="Dashboard" />
+  <img src="docs/screenshots/dashboard.png" width="220" alt="Smart dashboard" />
   &nbsp;
-  <img src="docs/screenshots/history.png" width="240" alt="Insights" />
+  <img src="docs/screenshots/history.png" width="220" alt="Insights" />
+  &nbsp;
+  <img src="docs/screenshots/settings.png" width="220" alt="Settings and widget health" />
 </p>
 
 <p align="center">
