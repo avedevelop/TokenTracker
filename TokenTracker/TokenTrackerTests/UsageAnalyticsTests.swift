@@ -236,9 +236,9 @@ final class UsageAnalyticsTests: XCTestCase {
         let data = InsightsPeriodData(records: records, periodDays: 7)
 
         XCTAssertEqual(data.selectedRecords.map(\.date), ["2026-06-01", "2026-06-03"])
-        XCTAssertEqual(data.previousRecords.map(\.date), ["2026-05-26", "2026-05-30"])
+        XCTAssertEqual(data.previousRecords.map(\.date), ["2026-05-26"])
         XCTAssertEqual(data.totalCost, 12, accuracy: 0.001)
-        XCTAssertEqual(data.costComparison.previous, 5, accuracy: 0.001)
+        XCTAssertEqual(data.costComparison.previous, 2, accuracy: 0.001)
     }
 }
 
