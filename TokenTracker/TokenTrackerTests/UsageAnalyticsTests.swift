@@ -124,6 +124,62 @@ final class UsageAnalyticsTests: XCTestCase {
         XCTAssertFalse(insights[0].isSpike)
     }
 
+    func test_widgetHealth_isReadyWhenAccountExistsAndDataIsFresh() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var usage = UsageData.empty
+        usage.tokensUpdatedAt = now.addingTimeInterval(-30 * 60)
+        let manifest = accountsManifest(activeId: UUID(), accounts: [accountEntry(name: "Work")])
+
+        let health = UsageAnalytics.widgetHealth(usage: usage, manifest: manifest, now: now)
+
+        XCTAssertEqual(health.state, .ready)
+    }
+
+    func test_widgetHealth_isNoAccountWhenManifestHasNoActiveOrAccounts() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var usage = UsageData.empty
+        usage.tokensUpdatedAt = now
+        let manifest = SharedStore.AccountsManifest(activeId: nil, accounts: [], widgetAccountId: nil)
+
+        let health = UsageAnalytics.widgetHealth(usage: usage, manifest: manifest, now: now)
+
+        XCTAssertEqual(health.state, .noAccount)
+    }
+
+    func test_widgetHealth_isNoDataWhenNoSnapshotDatesExist() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let manifest = accountsManifest(activeId: UUID(), accounts: [accountEntry(name: "Work")])
+
+        let health = UsageAnalytics.widgetHealth(usage: .empty, manifest: manifest, now: now)
+
+        XCTAssertEqual(health.state, .noData)
+    }
+
+    func test_widgetHealth_isStaleWhenFreshestSnapshotIsOlderThanTwoHours() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var usage = UsageData.empty
+        usage.tokensUpdatedAt = now.addingTimeInterval(-3 * 3600)
+        usage.limitsUpdatedAt = now.addingTimeInterval(-2 * 3600 - 1)
+        let manifest = accountsManifest(activeId: UUID(), accounts: [accountEntry(name: "Work")])
+
+        let health = UsageAnalytics.widgetHealth(usage: usage, manifest: manifest, now: now)
+
+        XCTAssertEqual(health.state, .stale)
+    }
+
+    func test_widgetHealth_usesFreshestSnapshotDate() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        var usage = UsageData.empty
+        usage.tokensUpdatedAt = now.addingTimeInterval(-4 * 3600)
+        usage.limitsUpdatedAt = now.addingTimeInterval(-20 * 60)
+        let manifest = accountsManifest(activeId: UUID(), accounts: [accountEntry(name: "Work")])
+
+        let health = UsageAnalytics.widgetHealth(usage: usage, manifest: manifest, now: now)
+
+        XCTAssertEqual(health.state, .ready)
+        XCTAssertEqual(health.freshestSnapshotAt, usage.limitsUpdatedAt)
+    }
+
     func test_dayRecord_decodesOldJSONWithoutProjects() throws {
         let json = """
         {
@@ -193,6 +249,18 @@ private extension UsageData {
         copy.limitsUpdatedAt = Date()
         return copy
     }
+}
+
+private func accountsManifest(
+    activeId: UUID?,
+    accounts: [SharedStore.AccountListEntry],
+    widgetAccountId: UUID? = nil
+) -> SharedStore.AccountsManifest {
+    SharedStore.AccountsManifest(activeId: activeId, accounts: accounts, widgetAccountId: widgetAccountId)
+}
+
+private func accountEntry(id: UUID = UUID(), name: String) -> SharedStore.AccountListEntry {
+    SharedStore.AccountListEntry(id: id, name: name)
 }
 
 private func makeRecord(date: String, cost: Double, tokens: Int, sessions: Int) -> DayRecord {

@@ -5,6 +5,7 @@ enum UsageAnalytics {
     static let criticalWeeklyThreshold = 90.0
     static let watchFiveHourThreshold = 70.0
     static let watchWeeklyThreshold = 65.0
+    static let widgetFreshnessInterval: TimeInterval = 2 * 3600
 
     static func status(for usage: UsageData, history: [DayRecord], now: Date = Date()) -> UsageStatus {
         guard let limits = usage.limits else {
@@ -77,6 +78,18 @@ enum UsageAnalytics {
     }
 }
 
+struct WidgetHealth: Equatable {
+    enum State: Equatable {
+        case ready
+        case stale
+        case noAccount
+        case noData
+    }
+
+    let state: State
+    let freshestSnapshotAt: Date?
+}
+
 struct UsageStatus: Equatable {
     enum Level: Equatable {
         case safe
@@ -116,6 +129,27 @@ struct ProjectInsight: Identifiable, Equatable {
 }
 
 extension UsageAnalytics {
+    static func widgetHealth(
+        usage: UsageData,
+        manifest: SharedStore.AccountsManifest,
+        now: Date = Date()
+    ) -> WidgetHealth {
+        guard manifest.activeId != nil || !manifest.accounts.isEmpty else {
+            return WidgetHealth(state: .noAccount, freshestSnapshotAt: nil)
+        }
+
+        let freshestSnapshotAt = freshestDate(usage.tokensUpdatedAt, usage.limitsUpdatedAt)
+        guard let freshestSnapshotAt else {
+            return WidgetHealth(state: .noData, freshestSnapshotAt: nil)
+        }
+
+        if now.timeIntervalSince(freshestSnapshotAt) > widgetFreshnessInterval {
+            return WidgetHealth(state: .stale, freshestSnapshotAt: freshestSnapshotAt)
+        }
+
+        return WidgetHealth(state: .ready, freshestSnapshotAt: freshestSnapshotAt)
+    }
+
     static func compare(current: Double, previous: Double) -> PeriodComparison {
         PeriodComparison(
             current: current,
@@ -149,6 +183,19 @@ extension UsageAnalytics {
         }
         return totals.map { name, total in
             ProjectUsage(name: name, tokens: total.tokens, cost: total.cost)
+        }
+    }
+
+    private static func freshestDate(_ lhs: Date?, _ rhs: Date?) -> Date? {
+        switch (lhs, rhs) {
+        case let (lhs?, rhs?):
+            return max(lhs, rhs)
+        case let (lhs?, nil):
+            return lhs
+        case let (nil, rhs?):
+            return rhs
+        case (nil, nil):
+            return nil
         }
     }
 

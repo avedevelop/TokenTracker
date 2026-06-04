@@ -714,6 +714,7 @@ struct SettingsView: View {
     private var settingsTab: some View {
         Group {
             behaviorSection
+            widgetHealthSection
             widgetAccountSection
             notificationsSection
             budgetSection
@@ -722,6 +723,15 @@ struct SettingsView: View {
     }
 
     // MARK: - Widget account section
+
+    private var widgetHealthSection: some View {
+        let manifest = SharedStore.readAccountsManifest()
+        let usage = widgetUsage(for: manifest)
+        return WidgetHealthCard(
+            health: UsageAnalytics.widgetHealth(usage: usage, manifest: manifest, now: now),
+            accountLabel: widgetAccountLabel(for: manifest)
+        )
+    }
 
     private var widgetAccountSection: some View {
         DarkCard {
@@ -759,6 +769,31 @@ struct SettingsView: View {
     }
 
     @State private var widgetAccountId: UUID? = SharedStore.readAccountsManifest().widgetAccountId
+
+    private func widgetUsage(for manifest: SharedStore.AccountsManifest) -> UsageData {
+        if let widgetId = manifest.widgetAccountId, widgetId != manifest.activeId {
+            return SharedStore.readAccount(id: widgetId)
+        }
+        return SharedStore.read()
+    }
+
+    private func widgetAccountLabel(for manifest: SharedStore.AccountsManifest) -> String {
+        guard let selectedId = manifest.widgetAccountId else {
+            return L10n.s("Активный аккаунт", "Active account")
+        }
+
+        if let entry = manifest.accounts.first(where: { $0.id == selectedId }) {
+            return entry.name.isEmpty
+                ? L10n.s("Выбранный аккаунт", "Selected account")
+                : entry.name
+        }
+
+        if let profile = accountStore.profiles.first(where: { $0.id == selectedId }) {
+            return profile.displayName
+        }
+
+        return L10n.s("Выбранный аккаунт недоступен", "Selected account unavailable")
+    }
 
     private func widgetAccountRow(id: UUID?, name: String, subtitle: String) -> some View {
         let selected = widgetAccountId == id
