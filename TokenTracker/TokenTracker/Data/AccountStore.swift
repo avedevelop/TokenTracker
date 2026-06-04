@@ -205,7 +205,17 @@ final class AccountStore: ObservableObject {
     /// can list accounts via LocalServer and pick which one to display.
     private func syncManifestToSharedStore() {
         let entries = profiles.map { SharedStore.AccountListEntry(id: $0.id, name: $0.displayName) }
-        SharedStore.writeAccountsManifest(SharedStore.AccountsManifest(activeId: activeId, accounts: entries))
+        let widgetAccountId = SharedStore.preservedWidgetAccountId(
+            SharedStore.readAccountsManifest().widgetAccountId,
+            accounts: entries
+        )
+        SharedStore.writeAccountsManifest(
+            SharedStore.AccountsManifest(
+                activeId: activeId,
+                accounts: entries,
+                widgetAccountId: widgetAccountId
+            )
+        )
     }
     func notifyManifestChanged() { syncManifestToSharedStore() }
 

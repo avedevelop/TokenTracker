@@ -82,6 +82,11 @@ final class SharedStore {
         var widgetAccountId: UUID?
     }
 
+    static func preservedWidgetAccountId(_ id: UUID?, accounts: [AccountListEntry]) -> UUID? {
+        guard let id, accounts.contains(where: { $0.id == id }) else { return nil }
+        return id
+    }
+
     static func readAccountsManifest() -> AccountsManifest {
         guard let data = try? Data(contentsOf: accountsFileURL),
               let m = try? decoder.decode(AccountsManifest.self, from: data)

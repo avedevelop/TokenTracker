@@ -59,4 +59,14 @@ final class SharedStoreTests: XCTestCase {
         let data = SharedStore.read()
         XCTAssertEqual(data.tokensToday, 0)
     }
+
+    func test_preservedWidgetAccountId_keepsExistingAccountOnly() {
+        let kept = UUID()
+        let removed = UUID()
+        let accounts = [SharedStore.AccountListEntry(id: kept, name: "Claude.ai")]
+
+        XCTAssertEqual(SharedStore.preservedWidgetAccountId(kept, accounts: accounts), kept)
+        XCTAssertNil(SharedStore.preservedWidgetAccountId(removed, accounts: accounts))
+        XCTAssertNil(SharedStore.preservedWidgetAccountId(nil, accounts: accounts))
+    }
 }
