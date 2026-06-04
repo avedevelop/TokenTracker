@@ -12,7 +12,7 @@
 <p align="center">
   <img src="docs/screenshots/dashboard.png" width="240" alt="Dashboard" />
   &nbsp;
-  <img src="docs/screenshots/history.png" width="240" alt="History" />
+  <img src="docs/screenshots/history.png" width="240" alt="Insights" />
 </p>
 
 <p align="center">
@@ -27,9 +27,9 @@
 
 ## О проекте / About
 
-**RU:** TokenTracker показывает ваши лимиты Claude (5-часовой и недельный), стоимость и количество токенов за день, историю расходов и виджеты на рабочем столе. Без облака, без телеметрии — всё работает локально.
+**RU:** TokenTracker показывает ваши лимиты Claude (5-часовой и недельный), стоимость и количество токенов за день, умные инсайты по периодам и проектам, мини-дашборд в строке меню и виджеты на рабочем столе. Без облака, без телеметрии — всё работает локально.
 
-**EN:** TokenTracker shows your Claude rate limits (5-hour and weekly), daily token cost and usage, spending history, and desktop widgets. No cloud, no telemetry — everything runs locally.
+**EN:** TokenTracker shows your Claude rate limits (5-hour and weekly), daily token cost and usage, smart period and project insights, a menu bar mini dashboard, and desktop widgets. No cloud, no telemetry — everything runs locally.
 
 > 🤖 Этот проект был полностью написан с помощью **Claude Sonnet 4.6** примерно за **12 часов**.  
 > 🤖 This project was built entirely with **Claude Sonnet 4.6** in approximately **12 hours**.  
@@ -43,9 +43,11 @@
 |---|---|---|
 | ⏱ | 5-часовой и недельный лимиты Claude | 5-hour and weekly Claude rate limits |
 | 💰 | Стоимость и токены за сегодня | Daily token cost and usage |
-| 📊 | График активности по часам | Hourly activity chart |
-| 📅 | История за 7 / 30 / 90 дней + CSV | 7 / 30 / 90-day history + CSV export |
+| 📊 | Умный дашборд с прогнозами и подсказками | Smart dashboard with forecasts and guidance |
+| 📅 | Insights за 7 / 30 / 90 дней + CSV | 7 / 30 / 90-day Insights + CSV export |
+| 🧭 | Мини-дашборд в строке меню | Menu bar mini dashboard |
 | 🖼 | Виджеты трёх размеров (WidgetKit) | Three widget sizes (WidgetKit) |
+| 🩺 | Проверка состояния виджета в настройках | Widget health status in Settings |
 | 🔔 | Уведомления о лимитах и бюджете | Limit and budget notifications |
 | 👥 | До 5 аккаунтов с быстрым переключением | Up to 5 accounts with quick switching |
 | 🌍 | Русский и английский интерфейс | Russian and English UI |
@@ -65,7 +67,7 @@
 ### Homebrew (рекомендуется / recommended)
 
 ```bash
-brew tap bvsmma/tap
+brew tap avedevelop/tap
 brew install --cask tokentracker
 ```
 
@@ -93,13 +95,13 @@ Download the latest release → [Releases](../../releases) → `TokenTracker-x.x
 ### Собрать из исходников / Build from source
 
 ```bash
-git clone https://github.com/bvsmma/TokenTracker.git
+git clone https://github.com/avedevelop/TokenTracker.git
 cd TokenTracker/TokenTracker
 open TokenTracker.xcodeproj
 ```
 
-В Xcode: выберите схему **TokenTracker** → укажите свой Development Team → `Cmd+R`  
-In Xcode: select the **TokenTracker** scheme → set your Development Team → `Cmd+R`
+В Xcode: выберите схему **TokenTracker** → `Cmd+R`. Для локальной сборки достаточно **Sign to Run Locally**.
+In Xcode: select the **TokenTracker** scheme → `Cmd+R`. Local builds work with **Sign to Run Locally**.
 
 ---
 

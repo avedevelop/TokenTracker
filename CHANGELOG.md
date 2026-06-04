@@ -4,6 +4,20 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.0 — June 2026
+
+### New features
+- **Smart dashboard** — new status, limit intelligence, and project insight cards summarize burn rate, reset timing, daily cost, weekly trends, and heaviest projects.
+- **Insights tab** — History has evolved into a richer analytics view with 7 / 30 / 90-day periods, metric switching, comparison deltas, charts, daily records, and CSV export.
+- **Menu bar mini dashboard** — the status item now opens a compact popover with limits, today totals, project highlights, activity, and quick actions for Dashboard, Insights, Settings, Sync, and Quit.
+- **Widget health** — Settings now shows widget data freshness, selected widget account, and macOS troubleshooting guidance when WidgetKit does not show TokenTracker until restart or log out/in.
+
+### Improved
+- Dashboard limits no longer show the extra credits row; credits remain out of the main limit stack unless the app has meaningful usage data for them.
+- Period and project analytics now aggregate duplicate daily records and use calendar-aligned comparison windows for sparse history.
+- Widget account selection is preserved when accounts are refreshed and cleared only when the selected account is removed.
+- App and widget continue to build with local ad-hoc signing, with no Developer ID requirement.
+
 ## v1.3.9 — May 2026
 
 ### Changed

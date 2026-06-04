@@ -118,6 +118,14 @@
 
 ---
 
+## TokenTracker не появляется в списке виджетов / TokenTracker is missing from the widget picker
+
+**RU:** Обычно это кэш WidgetKit/macOS после установки или обновления. Сначала перезапустите Mac. Если не помогло — выйдите из пользователя macOS и войдите обратно. В приложении также проверьте **Настройки → Виджет**: там показаны свежесть данных и выбранный аккаунт виджета.
+
+**EN:** This is usually a WidgetKit/macOS cache after installation or update. Restart your Mac first. If it still does not appear, log out of macOS and log back in. You can also check **Settings → Widget** in TokenTracker for data freshness and the selected widget account.
+
+---
+
 ## Будут ли обновления? / Will there be updates?
 
 **RU:** Да. Проект активно развивается. Следите за [Releases](../../releases).
