@@ -133,15 +133,27 @@ final class LimitsPoller {
     func fetchLimits(sessionKey: String) async throws -> UsageData.Limits {
         // Prefer the active profile's stored orgId (multi-account safe), fall back to fresh fetch
         var orgId: String? = await MainActor.run { AccountStore.shared.activeOrgId }
+        var sessionVerifiedViaFetch = false
         if orgId == nil || orgId!.isEmpty {
-            await fetchAndCacheOrgId(sessionKey: sessionKey)
-            orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
+            if let fetched = await fetchOrgIdFromAPI(auth: .cookie(sessionKey)) {
+                await cacheOrgId(fetched)
+                orgId = fetched
+                sessionVerifiedViaFetch = true
+            } else {
+                orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
+            }
         }
 
         guard let orgId, !orgId.isEmpty else {
             throw PollerError.missingOrgId
         }
-        return try await fetchLimits(sessionKey: sessionKey, orgId: orgId)
+        do {
+            return try await fetchLimits(sessionKey: sessionKey, orgId: orgId)
+        } catch PollerError.unauthorized where sessionVerifiedViaFetch {
+            // Session is confirmed valid (orgId just fetched), but usage endpoint rejected us —
+            // plan doesn't expose usage data. Log in without limit info.
+            throw PollerError.unexpectedResponse
+        }
     }
 
     /// Variant that takes an explicit orgId (used when polling non-active accounts).
@@ -175,10 +187,12 @@ final class LimitsPoller {
     /// Fetch limits using Claude Code OAuth token (Bearer auth) — no sessionKey needed.
     func fetchLimitsWithOAuthToken(_ token: String) async throws -> UsageData.Limits {
         var orgId: String? = await MainActor.run { AccountStore.shared.activeOrgId }
+        var sessionVerifiedViaFetch = false
         if orgId == nil || orgId!.isEmpty {
             if let fetched = await fetchOrgIdFromAPI(auth: .bearer(token)) {
                 await cacheOrgId(fetched)
                 orgId = fetched
+                sessionVerifiedViaFetch = true
             }
         }
 
@@ -198,7 +212,10 @@ final class LimitsPoller {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse else { throw PollerError.unexpectedResponse }
-        if http.statusCode == 401 || http.statusCode == 403 { throw PollerError.unauthorized }
+        if http.statusCode == 401 || http.statusCode == 403 {
+            if sessionVerifiedViaFetch { throw PollerError.unexpectedResponse }
+            throw PollerError.unauthorized
+        }
         guard http.statusCode == 200 else { throw PollerError.unexpectedResponse }
 
         return try parseLimits(from: data)

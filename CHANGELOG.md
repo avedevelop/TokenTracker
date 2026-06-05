@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.2 — June 2026
+
+### Fixed
+- Fixed "Token is invalid or expired" error for accounts where the usage endpoint is unavailable (Free plan or Anthropic API change). The session is now verified independently; if the usage endpoint rejects the request but the session itself is valid, the app logs in without limit data instead of showing a false error.
+
+---
+
 ## v1.4.1 — June 2026
 
 ### Fixed
