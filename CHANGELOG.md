@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.5 — June 2026
+
+### Fixed
+- Fixed login failure caused by Cloudflare blocking requests without a browser User-Agent. All API calls now send a Safari/macOS User-Agent so claude.ai's Cloudflare layer lets them through.
+
+---
+
 ## v1.4.4 — June 2026
 
 ### Fixed

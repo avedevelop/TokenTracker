@@ -2,6 +2,8 @@ import Foundation
 
 final class LimitsPoller {
     private static let baseURL = "https://claude.ai"
+    // Cloudflare blocks requests without a browser-like User-Agent.
+    private static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
 
     enum PollerError: Error {
         case unauthorized
@@ -57,15 +59,22 @@ final class LimitsPoller {
         case bearer(String)
     }
 
+    private func makeRequest(url: URL, auth: AuthMethod) -> URLRequest {
+        var req = URLRequest(url: url)
+        switch auth {
+        case .cookie(let key): req.setValue("sessionKey=\(key)", forHTTPHeaderField: "Cookie")
+        case .bearer(let token): req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        req.setValue(Self.userAgent,  forHTTPHeaderField: "User-Agent")
+        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        req.setValue("en-US,en;q=0.9", forHTTPHeaderField: "Accept-Language")
+        return req
+    }
+
     func fetchOrgIdFromAPI(auth: AuthMethod) async -> String? {
         guard let url = URL(string: "https://claude.ai/api/organizations") else { return nil }
-        var request = URLRequest(url: url)
-        switch auth {
-        case .cookie(let key): request.setValue("sessionKey=\(key)", forHTTPHeaderField: "Cookie")
-        case .bearer(let token): request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        let request = makeRequest(url: url, auth: auth)
         guard let (data, response) = try? await URLSession.shared.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
@@ -85,10 +94,7 @@ final class LimitsPoller {
 
     func fetchUserInfoWithOAuth(_ token: String) async -> UserInfo {
         guard let url = URL(string: "https://claude.ai/api/account") else { return UserInfo() }
-        var req = URLRequest(url: url)
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        let req = makeRequest(url: url, auth: .bearer(token))
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -100,10 +106,7 @@ final class LimitsPoller {
 
     private func fetchFromAccount(sessionKey: String) async -> UserInfo? {
         guard let url = URL(string: "https://claude.ai/api/account") else { return nil }
-        var req = URLRequest(url: url)
-        req.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        let req = makeRequest(url: url, auth: .cookie(sessionKey))
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -116,10 +119,7 @@ final class LimitsPoller {
 
     private func fetchFromOrganizations(sessionKey: String) async -> UserInfo {
         guard let url = URL(string: "https://claude.ai/api/organizations") else { return UserInfo() }
-        var req = URLRequest(url: url)
-        req.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        let req = makeRequest(url: url, auth: .cookie(sessionKey))
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
@@ -164,11 +164,7 @@ final class LimitsPoller {
             throw PollerError.invalidEndpoint
         }
 
-        var request = URLRequest(url: url)
-        request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
-        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
+        let request = makeRequest(url: url, auth: .cookie(sessionKey))
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse else {
@@ -204,11 +200,7 @@ final class LimitsPoller {
             throw PollerError.invalidEndpoint
         }
 
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
+        let request = makeRequest(url: url, auth: .bearer(token))
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse else { throw PollerError.unexpectedResponse }
@@ -229,11 +221,7 @@ final class LimitsPoller {
             throw PollerError.invalidEndpoint
         }
 
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
+        let request = makeRequest(url: url, auth: .bearer(token))
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse else { throw PollerError.unexpectedResponse }
