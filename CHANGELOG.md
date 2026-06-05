@@ -4,6 +4,17 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.1 — June 2026
+
+### Fixed
+- Fixed an account lockout that could happen while adding a new Claude account with a manual Org ID.
+- New accounts now become active only after the session token and Org ID flow succeeds.
+- Added a Cancel action to the add-account login sheet.
+- Signing out of one account now keeps the app logged in when another saved account is still available.
+- The app now repairs a missing or stale active account selection on launch.
+
+---
+
 ## v1.4.0 — June 2026
 
 ### New features

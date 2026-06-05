@@ -335,7 +335,7 @@ struct LoginView: View {
                 let limits = token.hasPrefix("sk-ant-oat")
                     ? try await poller.fetchLimitsWithOAuthToken(token, orgId: orgId)
                     : try await poller.fetchLimits(sessionKey: token, orgId: orgId)
-                await completeLogin(token: token, orgId: orgId)
+                completeLogin(token: token, orgId: orgId)
                 try? SharedStore.updateLimits(limits)
                 await MainActor.run {
                     isValidating = false
@@ -380,7 +380,7 @@ struct LoginView: View {
                     : try await poller.fetchLimits(sessionKey: token)
 
                 let orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
-                await completeLogin(token: token, orgId: orgId)
+                completeLogin(token: token, orgId: orgId)
                 try? SharedStore.updateLimits(limits)
                 await MainActor.run {
                     isValidating = false
@@ -402,7 +402,7 @@ struct LoginView: View {
                 }
             } catch LimitsPoller.PollerError.unexpectedResponse {
                 // Token valid but usage endpoint unavailable (e.g. free plan — no limits data)
-                await completeLogin(token: token, orgId: nil)
+                completeLogin(token: token, orgId: nil)
                 await MainActor.run {
                     isValidating = false
                     pendingToken = nil
