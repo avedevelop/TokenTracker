@@ -138,7 +138,9 @@ struct SettingsView: View {
                         LoginView(onLoginSuccess: {
                             withAnimation(.spring(duration: 0.25)) { showAddAccount = false }
                             orchestrator.onLoginSuccess()
-                        }, isSheet: true)
+                        }, isSheet: true, onCancel: {
+                            withAnimation(.spring(duration: 0.25)) { showAddAccount = false }
+                        })
                         .environmentObject(orchestrator)
                     }
                     .background(Color(red: 0.11, green: 0.09, blue: 0.17))

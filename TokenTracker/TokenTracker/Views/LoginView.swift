@@ -5,12 +5,14 @@ private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
 struct LoginView: View {
     let onLoginSuccess: () -> Void
     var isSheet: Bool = false
+    var onCancel: (() -> Void)? = nil
     @State private var sessionToken = ""
     @State private var step: Step = .intro
     @State private var isValidating = false
     @State private var error: String? = nil
     @State private var orgIdInput = ""
     @State private var showToken = false
+    @State private var pendingToken: String? = nil
 
     enum Step { case intro, paste, orgId }
 
@@ -213,7 +215,12 @@ struct LoginView: View {
             }
 
             HStack(spacing: 10) {
-                if !isSheet {
+                if isSheet {
+                    Button(L10n.s("Отмена", "Cancel")) { cancel() }
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .buttonStyle(.plain)
+                } else {
                     Button(L10n.back) { step = .intro; error = nil }
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.4))
@@ -284,8 +291,15 @@ struct LoginView: View {
             }
 
             HStack(spacing: 10) {
-                Button(L10n.back) { step = .paste; error = nil }
-                    .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.4)).buttonStyle(.plain)
+                Button(isSheet ? L10n.s("Отмена", "Cancel") : L10n.back) {
+                    if isSheet {
+                        cancel()
+                    } else {
+                        step = .paste
+                        error = nil
+                    }
+                }
+                .font(.system(size: 12, weight: .medium)).foregroundStyle(.white.opacity(0.4)).buttonStyle(.plain)
                 Spacer()
                 Button { saveOrgId() } label: {
                     HStack(spacing: 6) {
@@ -308,23 +322,26 @@ struct LoginView: View {
     private func saveOrgId() {
         let orgId = orgIdInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !orgId.isEmpty else { return }
+        guard let token = pendingToken ?? sessionToken.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty else {
+            step = .paste
+            return
+        }
         isValidating = true
         error = nil
 
         Task {
-            guard let token = AccountStore.shared.activeToken() ?? KeychainStore.load() else {
-                await MainActor.run { isValidating = false; step = .paste }
-                return
-            }
             do {
                 let poller = LimitsPoller()
                 let limits = token.hasPrefix("sk-ant-oat")
-                    ? try await poller.fetchLimitsWithOAuthToken(token)
-                    : try await poller.fetchLimits(sessionKey: token)
-                // Save org ID only after successful validation
-                UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
+                    ? try await poller.fetchLimitsWithOAuthToken(token, orgId: orgId)
+                    : try await poller.fetchLimits(sessionKey: token, orgId: orgId)
+                await completeLogin(token: token, orgId: orgId)
                 try? SharedStore.updateLimits(limits)
-                await MainActor.run { isValidating = false; onLoginSuccess() }
+                await MainActor.run {
+                    isValidating = false
+                    pendingToken = nil
+                    onLoginSuccess()
+                }
             } catch {
                 await MainActor.run {
                     isValidating = false
@@ -345,58 +362,77 @@ struct LoginView: View {
         error = nil
 
         Task {
+            let previousOrgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
+            func restorePreviousOrgIdIfNeeded() {
+                guard isSheet else { return }
+                if let previousOrgId {
+                    UserDefaults.standard.set(previousOrgId, forKey: "com.tokentracker.orgId")
+                } else {
+                    UserDefaults.standard.removeObject(forKey: "com.tokentracker.orgId")
+                }
+            }
+
             do {
                 let poller = LimitsPoller()
-                // Clear cached orgId to force fresh lookup with new token
                 UserDefaults.standard.removeObject(forKey: "com.tokentracker.orgId")
                 let limits = token.hasPrefix("sk-ant-oat")
                     ? try await poller.fetchLimitsWithOAuthToken(token)
                     : try await poller.fetchLimits(sessionKey: token)
 
-                // Success — save and proceed
-                if isSheet {
-                    await AccountStore.shared.addNewProfile(token: token)
-                } else {
-                    await AccountStore.shared.ensureProfile(token: token)
-                }
+                let orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId")
+                await completeLogin(token: token, orgId: orgId)
                 try? SharedStore.updateLimits(limits)
                 await MainActor.run {
                     isValidating = false
+                    pendingToken = nil
                     onLoginSuccess()
                 }
             } catch LimitsPoller.PollerError.unauthorized {
+                restorePreviousOrgIdIfNeeded()
                 await MainActor.run {
                     isValidating = false
                     error = L10n.s("Токен недействителен или истёк", "Token is invalid or expired")
                 }
             } catch LimitsPoller.PollerError.missingOrgId {
-                if isSheet {
-                    await AccountStore.shared.addNewProfile(token: token)
-                } else {
-                    await AccountStore.shared.ensureProfile(token: token)
-                }
+                restorePreviousOrgIdIfNeeded()
                 await MainActor.run {
                     isValidating = false
+                    pendingToken = token
                     step = .orgId
                 }
             } catch LimitsPoller.PollerError.unexpectedResponse {
                 // Token valid but usage endpoint unavailable (e.g. free plan — no limits data)
-                if isSheet {
-                    await AccountStore.shared.addNewProfile(token: token)
-                } else {
-                    await AccountStore.shared.ensureProfile(token: token)
-                }
+                await completeLogin(token: token, orgId: nil)
                 await MainActor.run {
                     isValidating = false
+                    pendingToken = nil
                     onLoginSuccess()
                 }
             } catch {
+                restorePreviousOrgIdIfNeeded()
                 await MainActor.run {
                     isValidating = false
                     self.error = L10n.s("Ошибка сети. Проверьте интернет.", "Network error. Check your connection.")
                 }
             }
         }
+    }
+
+    @MainActor
+    private func completeLogin(token: String, orgId: String?) {
+        if isSheet {
+            AccountStore.shared.addNewProfile(token: token, orgId: orgId)
+        } else {
+            AccountStore.shared.ensureProfile(token: token, orgId: orgId)
+        }
+    }
+
+    private func cancel() {
+        pendingToken = nil
+        sessionToken = ""
+        orgIdInput = ""
+        error = nil
+        onCancel?()
     }
 
     // MARK: - Helpers
@@ -414,5 +450,11 @@ struct LoginView: View {
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+private extension String {
+    var nilIfEmpty: String? {
+        isEmpty ? nil : self
     }
 }

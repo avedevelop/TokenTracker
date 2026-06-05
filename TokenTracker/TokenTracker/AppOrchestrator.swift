@@ -94,9 +94,13 @@ final class AppOrchestrator: ObservableObject {
         if let profile = AccountStore.shared.activeProfile {
             AccountStore.shared.remove(profile)
         }
-        isLoggedIn = false
         limitsTimer?.invalidate()
         limitsTimer = nil
+        isLoggedIn = AccountStore.shared.activeToken() != nil
+        if let profile = AccountStore.shared.activeProfile {
+            switchAccount(profile)
+            return
+        }
         var stored = SharedStore.read()
         stored.limits = nil
         stored.limitsUpdatedAt = nil

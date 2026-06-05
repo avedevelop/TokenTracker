@@ -49,6 +49,7 @@ final class AccountStore: ObservableObject {
         // Load all tokens in one Keychain read
         tokenCache = readAllTokensFromKeychain()
         migrateLegacyIfNeeded()
+        repairActiveProfileIfNeeded()
         syncManifestToSharedStore()
     }
 
@@ -86,25 +87,31 @@ final class AccountStore: ObservableObject {
     }
 
     /// Creates or updates the active profile with the given token (initial login only).
-    func ensureProfile(token: String) {
+    func ensureProfile(token: String, orgId: String? = nil) {
         if let id = activeId {
             tokenCache[id] = token
+            if let orgId {
+                updateOrgId(orgId, for: id)
+            }
             try? writeAllTokensToKeychain()
         } else {
-            let orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId") ?? ""
+            let orgId = orgId ?? UserDefaults.standard.string(forKey: "com.tokentracker.orgId") ?? ""
             try? add(name: "Claude.ai", orgId: orgId, token: token)
         }
     }
 
     /// Always creates a new profile and switches to it (for adding a second account).
-    func addNewProfile(token: String) {
-        let orgId = UserDefaults.standard.string(forKey: "com.tokentracker.orgId") ?? ""
+    func addNewProfile(token: String, orgId: String? = nil) {
+        let orgId = orgId ?? UserDefaults.standard.string(forKey: "com.tokentracker.orgId") ?? ""
         let profile = AccountProfile(id: UUID(), name: "Claude.ai", orgId: orgId)
         tokenCache[profile.id] = token
         try? writeAllTokensToKeychain()
         profiles.append(profile)
         saveProfiles()
         setActive(profile.id)
+        if !orgId.isEmpty {
+            UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
+        }
     }
 
     func updateProfileInfo(id: UUID, email: String?, fullName: String?, tokenValid: Bool = true) {
@@ -245,6 +252,17 @@ final class AccountStore: ObservableObject {
         profiles = [profile]
         saveProfiles()
         activeId = profile.id
+        saveActiveId()
+    }
+
+    private func repairActiveProfileIfNeeded() {
+        if let activeId,
+           profiles.contains(where: { $0.id == activeId }),
+           tokenCache[activeId] != nil {
+            return
+        }
+
+        activeId = profiles.first { tokenCache[$0.id] != nil }?.id
         saveActiveId()
     }
 

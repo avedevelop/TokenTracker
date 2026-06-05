@@ -204,6 +204,28 @@ final class LimitsPoller {
         return try parseLimits(from: data)
     }
 
+    /// Variant that takes an explicit orgId for OAuth tokens.
+    func fetchLimitsWithOAuthToken(_ token: String, orgId: String) async throws -> UsageData.Limits {
+        guard !orgId.isEmpty else { throw PollerError.missingOrgId }
+
+        guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage") else {
+            throw PollerError.invalidEndpoint
+        }
+
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let http = response as? HTTPURLResponse else { throw PollerError.unexpectedResponse }
+        if http.statusCode == 401 || http.statusCode == 403 { throw PollerError.unauthorized }
+        guard http.statusCode == 200 else { throw PollerError.unexpectedResponse }
+
+        return try parseLimits(from: data)
+    }
+
     private func parseLimits(from data: Data) throws -> UsageData.Limits {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw PollerError.unexpectedResponse
