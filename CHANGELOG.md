@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.3 — June 2026
+
+### Fixed
+- Further hardened session validation: when the usage endpoint returns 401/403, the app now independently verifies the session via `/api/organizations` before showing an error. If the session is valid, the app logs in without limit data instead of falsely reporting the token as expired.
+
+---
+
 ## v1.4.2 — June 2026
 
 ### Fixed

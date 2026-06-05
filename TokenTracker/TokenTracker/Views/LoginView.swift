@@ -388,10 +388,26 @@ struct LoginView: View {
                     onLoginSuccess()
                 }
             } catch LimitsPoller.PollerError.unauthorized {
-                restorePreviousOrgIdIfNeeded()
-                await MainActor.run {
-                    isValidating = false
-                    error = L10n.s("Токен недействителен или истёк", "Token is invalid or expired")
+                // Before showing error, verify session independently.
+                // A 401/403 on the usage endpoint doesn't always mean the token is invalid —
+                // it can mean the plan doesn't expose usage data or the endpoint changed.
+                let auth: LimitsPoller.AuthMethod = token.hasPrefix("sk-ant-oat")
+                    ? .bearer(token)
+                    : .cookie(token)
+                if let orgId = await LimitsPoller().fetchOrgIdFromAPI(auth: auth) {
+                    // Session is valid — log in without limit data
+                    completeLogin(token: token, orgId: orgId)
+                    await MainActor.run {
+                        isValidating = false
+                        pendingToken = nil
+                        onLoginSuccess()
+                    }
+                } else {
+                    restorePreviousOrgIdIfNeeded()
+                    await MainActor.run {
+                        isValidating = false
+                        error = L10n.s("Токен недействителен или истёк", "Token is invalid or expired")
+                    }
                 }
             } catch LimitsPoller.PollerError.missingOrgId {
                 restorePreviousOrgIdIfNeeded()
