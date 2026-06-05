@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 private let bg = Color(red: 0.09, green: 0.07, blue: 0.14)
 
@@ -13,6 +14,7 @@ struct LoginView: View {
     @State private var orgIdInput = ""
     @State private var showToken = false
     @State private var pendingToken: String? = nil
+    @State private var showWebAuth = false
 
     enum Step { case intro, paste, orgId }
 
@@ -50,6 +52,15 @@ struct LoginView: View {
         .frame(width: 340)
         .environment(\.colorScheme, .dark)
         .onAppear { if isSheet { step = .paste } }
+        .sheet(isPresented: $showWebAuth) {
+            WebAuthSheet(onTokenFound: { token in
+                showWebAuth = false
+                sessionToken = token
+                validate()
+            }, onCancel: {
+                showWebAuth = false
+            })
+        }
     }
 
     // MARK: - Intro
@@ -86,13 +97,12 @@ struct LoginView: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 28)
 
-            // Primary button
+            // Primary button — opens embedded WebView (handles Cloudflare automatically)
             Button {
-                NSWorkspace.shared.open(URL(string: "https://claude.ai")!)
-                step = .paste
+                showWebAuth = true
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "safari")
+                    Image(systemName: "person.crop.circle.badge.checkmark")
                     Text(L10n.openClaudeAi)
                 }
                 .font(.system(size: 13, weight: .semibold))
@@ -105,9 +115,9 @@ struct LoginView: View {
             .buttonStyle(.plain)
             .padding(.bottom, 10)
 
-            // Already have token
+            // Fallback: manual token entry
             Button { step = .paste } label: {
-                Text(L10n.s("Уже есть токен", "I already have a token"))
+                Text(L10n.s("Ввести токен вручную", "Enter token manually"))
                     .font(.system(size: 11))
                     .foregroundStyle(.white.opacity(0.3))
             }
@@ -472,5 +482,54 @@ struct LoginView: View {
 private extension String {
     var nilIfEmpty: String? {
         isEmpty ? nil : self
+    }
+}
+
+// MARK: - WebAuth sheet
+
+private struct WebAuthSheet: View {
+    let onTokenFound: (String) -> Void
+    let onCancel: () -> Void
+    @State private var status = L10n.s("Загружаем claude.ai…", "Loading claude.ai…")
+    @State private var found = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text(L10n.s("Вход через браузер", "Sign in via browser"))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.8))
+                Spacer()
+                Button(L10n.s("Отмена", "Cancel"), action: onCancel)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+
+            Text(status)
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.4))
+                .padding(.bottom, 8)
+
+            ClaudeWebAuthView(
+                onTokenFound: { token in
+                    guard !found else { return }
+                    found = true
+                    status = L10n.s("Токен получен, проверяем…", "Token found, verifying…")
+                    onTokenFound(token)
+                },
+                onCancel: onCancel
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+        .frame(width: 560, height: 460)
+        .background(Color(red: 0.09, green: 0.07, blue: 0.14))
+        .environment(\.colorScheme, .dark)
     }
 }

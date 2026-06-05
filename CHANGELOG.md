@@ -4,6 +4,14 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.6 — June 2026
+
+### Changed
+- Login now uses an embedded WebView instead of manual cookie copying. Clicking "Connect" opens claude.ai inside the app — Cloudflare challenges are solved automatically by WebKit and the session token is extracted without any manual steps.
+- Manual token entry is still available as a fallback via "Enter token manually".
+
+---
+
 ## v1.4.5 — June 2026
 
 ### Fixed
