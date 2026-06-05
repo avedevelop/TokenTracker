@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.7 — June 2026
+
+### Fixed
+- Fixed post-login redirect back to login screen. After WebView login the app now forwards all Cloudflare cookies (including `cf_clearance`) to background URLSession polling requests, so Cloudflare stops blocking them.
+
+---
+
 ## v1.4.6 — June 2026
 
 ### Changed

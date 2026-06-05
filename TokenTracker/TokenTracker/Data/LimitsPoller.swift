@@ -1,9 +1,13 @@
 import Foundation
+import WebKit
 
 final class LimitsPoller {
     private static let baseURL = "https://claude.ai"
-    // Cloudflare blocks requests without a browser-like User-Agent.
     private static let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
+
+    /// All cookies captured from the WKWebView login (includes cf_clearance).
+    /// Injected into every URLSession request so Cloudflare lets background polling through.
+    static var webViewCookies: [HTTPCookie] = []
 
     enum PollerError: Error {
         case unauthorized
@@ -61,10 +65,22 @@ final class LimitsPoller {
 
     private func makeRequest(url: URL, auth: AuthMethod) -> URLRequest {
         var req = URLRequest(url: url)
+        req.httpShouldHandleCookies = false  // we build the header manually
+
         switch auth {
-        case .cookie(let key): req.setValue("sessionKey=\(key)", forHTTPHeaderField: "Cookie")
-        case .bearer(let token): req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        case .cookie(let key):
+            // Merge WebView cookies (includes cf_clearance) with our session key.
+            // WebView cookies take lower precedence so sessionKey always wins.
+            var cookiePairs: [String] = Self.webViewCookies
+                .filter { $0.name != "sessionKey" }
+                .map { "\($0.name)=\($0.value)" }
+            cookiePairs.append("sessionKey=\(key)")
+            req.setValue(cookiePairs.joined(separator: "; "), forHTTPHeaderField: "Cookie")
+
+        case .bearer(let token):
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
+
         req.setValue(Self.userAgent,  forHTTPHeaderField: "User-Agent")
         req.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
         req.setValue("application/json", forHTTPHeaderField: "Accept")
