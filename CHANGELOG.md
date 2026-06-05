@@ -4,6 +4,13 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.4 — June 2026
+
+### Fixed
+- Fixed stale local state after app reinstall. When profiles exist in UserDefaults but Keychain has no matching tokens (typical after reinstall), the app now purges that stale metadata automatically so login starts from a clean state instead of using an old cached Org ID.
+
+---
+
 ## v1.4.3 — June 2026
 
 ### Fixed

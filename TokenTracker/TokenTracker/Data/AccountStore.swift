@@ -49,6 +49,9 @@ final class AccountStore: ObservableObject {
         // Load all tokens in one Keychain read
         tokenCache = readAllTokensFromKeychain()
         migrateLegacyIfNeeded()
+        // If profiles exist in UserDefaults but Keychain has no tokens (e.g. after app
+        // reinstall), purge stale profile metadata so login starts from a clean state.
+        purgeStaleProfilesIfNeeded()
         repairActiveProfileIfNeeded()
         syncManifestToSharedStore()
     }
@@ -253,6 +256,17 @@ final class AccountStore: ObservableObject {
         saveProfiles()
         activeId = profile.id
         saveActiveId()
+    }
+
+    /// If UserDefaults has profiles but Keychain has no tokens for any of them,
+    /// the app was likely reinstalled. Purge stale metadata so login starts fresh.
+    private func purgeStaleProfilesIfNeeded() {
+        guard !profiles.isEmpty, tokenCache.isEmpty else { return }
+        profiles = []
+        activeId = nil
+        UserDefaults.standard.removeObject(forKey: profilesKey)
+        UserDefaults.standard.removeObject(forKey: activeKey)
+        UserDefaults.standard.removeObject(forKey: "com.tokentracker.orgId")
     }
 
     private func repairActiveProfileIfNeeded() {
