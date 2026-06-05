@@ -7,6 +7,20 @@
     <language>en</language>
 
     <item>
+      <title>Version 1.4.2</title>
+      <pubDate>Thu, 05 Jun 2026 00:00:00 +0000</pubDate>
+      <sparkle:version>1.4.2</sparkle:version>
+      <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/avedevelop/TokenTracker/releases/tag/v1.4.2</sparkle:releaseNotesLink>
+      <enclosure
+        url="https://github.com/avedevelop/TokenTracker/releases/download/v1.4.2/TokenTracker-1.4.2.dmg"
+        sparkle:edSignature="8eQClemdSZq6YmRQQHo2wVREdZ33TsioYYYkmqcR0NTtObvdQ6S58Vjz8u9lUKK4tmgRSY3hXohOavxBfMk5Aw=="
+        length="2887177"
+        type="application/octet-stream"
+      />
+    </item>
+
+    <item>
       <title>Version 1.4.1</title>
       <pubDate>Thu, 05 Jun 2026 09:49:54 +0000</pubDate>
       <sparkle:version>1.4.1</sparkle:version>
