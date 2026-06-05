@@ -4,6 +4,14 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.8 — June 2026
+
+### Fixed
+- Fixed crash on launch caused by Sparkle.framework having a mismatched code signature. All nested frameworks and XPC services are now re-signed with a consistent ad-hoc identity after build, which macOS 26 Tahoe requires.
+- Fixed WebView login window not appearing: the `WebAuthWindowController` was being deallocated immediately after creation. Added a static reference to keep it alive until login completes or the window is closed.
+
+---
+
 ## v1.4.7 — June 2026
 
 ### Fixed
