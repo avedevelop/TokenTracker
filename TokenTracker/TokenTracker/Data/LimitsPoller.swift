@@ -2,6 +2,7 @@ import Foundation
 
 final class LimitsPoller {
     private static let baseURL = "https://claude.ai"
+    private static let browserUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15"
 
     enum PollerError: Error {
         case unauthorized
@@ -58,19 +59,22 @@ final class LimitsPoller {
     }
 
     func fetchOrgIdFromAPI(auth: AuthMethod) async -> String? {
-        guard let url = URL(string: "https://claude.ai/api/organizations") else { return nil }
-        var request = URLRequest(url: url)
+        let key: String
         switch auth {
-        case .cookie(let key): request.setValue("sessionKey=\(key)", forHTTPHeaderField: "Cookie")
-        case .bearer(let token): request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        case .cookie(let k): key = k
+        case .bearer(let t): key = t
         }
-        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-        guard let (data, response) = try? await URLSession.shared.data(for: request),
-              (response as? HTTPURLResponse)?.statusCode == 200,
-              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-              let orgId = json.first?["id"] as? String else { return nil }
-        return orgId
+        do {
+            try await CloudflareBridge.shared.ensureSession(key)
+            let (status, body) = try await CloudflareBridge.shared.get(path: "/api/organizations")
+            guard status == 200,
+                  let data = body.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+                  let first = json.first else { return nil }
+            // API returns numeric "id" and string "uuid" — prefer uuid (the org GUID)
+            let orgId = first["uuid"] as? String ?? (first["id"].map { "\($0)" })
+            return orgId
+        } catch { return nil }
     }
 
     struct UserInfo {
@@ -144,31 +148,35 @@ final class LimitsPoller {
         return try await fetchLimits(sessionKey: sessionKey, orgId: orgId)
     }
 
-    /// Variant that takes an explicit orgId (used when polling non-active accounts).
+    /// Variant that takes an explicit orgId. Always uses CloudflareBridge.
     func fetchLimits(sessionKey: String, orgId: String) async throws -> UsageData.Limits {
         guard !orgId.isEmpty else { throw PollerError.missingOrgId }
+        return try await fetchLimitsBridge(sessionKey: sessionKey, orgId: orgId)
+    }
 
+    private func fetchLimitsBridge(sessionKey: String, orgId: String) async throws -> UsageData.Limits {
+        try await CloudflareBridge.shared.ensureSession(sessionKey)
+        let (status, body) = try await CloudflareBridge.shared.get(path: "/api/organizations/\(orgId)/usage")
+        if status == 401 || status == 403 { throw PollerError.unauthorized }
+        guard status == 200 else { throw PollerError.unexpectedResponse }
+        guard let data = body.data(using: .utf8) else { throw PollerError.unexpectedResponse }
+        return try parseLimits(from: data)
+    }
+
+    private func fetchLimitsURLSession(sessionKey: String, orgId: String) async throws -> UsageData.Limits {
         guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage") else {
             throw PollerError.invalidEndpoint
         }
-
         var request = URLRequest(url: url)
         request.setValue("sessionKey=\(sessionKey)", forHTTPHeaderField: "Cookie")
         request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-
+        request.setValue(Self.browserUA, forHTTPHeaderField: "User-Agent")
+        request.setValue("https://claude.ai/", forHTTPHeaderField: "Referer")
         let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let http = response as? HTTPURLResponse else {
-            throw PollerError.unexpectedResponse
-        }
-        if http.statusCode == 401 || http.statusCode == 403 {
-            throw PollerError.unauthorized
-        }
-        guard http.statusCode == 200 else {
-            throw PollerError.unexpectedResponse
-        }
-
+        guard let http = response as? HTTPURLResponse else { throw PollerError.unexpectedResponse }
+        if http.statusCode == 401 || http.statusCode == 403 { throw PollerError.unauthorized }
+        guard http.statusCode == 200 else { throw PollerError.unexpectedResponse }
         return try parseLimits(from: data)
     }
 
@@ -181,26 +189,15 @@ final class LimitsPoller {
                 orgId = fetched
             }
         }
-
-        guard let orgId, !orgId.isEmpty else {
-            throw PollerError.missingOrgId
-        }
-
-        guard let url = URL(string: "\(Self.baseURL)/api/organizations/\(orgId)/usage") else {
-            throw PollerError.invalidEndpoint
-        }
-
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("web_claude_ai", forHTTPHeaderField: "anthropic-client-platform")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let http = response as? HTTPURLResponse else { throw PollerError.unexpectedResponse }
-        if http.statusCode == 401 || http.statusCode == 403 { throw PollerError.unauthorized }
-        guard http.statusCode == 200 else { throw PollerError.unexpectedResponse }
-
+        guard let orgId, !orgId.isEmpty else { throw PollerError.missingOrgId }
+        try await CloudflareBridge.shared.ensureSession(token)
+        let (status, body) = try await CloudflareBridge.shared.get(
+            path: "/api/organizations/\(orgId)/usage",
+            bearerToken: token
+        )
+        if status == 401 || status == 403 { throw PollerError.unauthorized }
+        guard status == 200 else { throw PollerError.unexpectedResponse }
+        guard let data = body.data(using: .utf8) else { throw PollerError.unexpectedResponse }
         return try parseLimits(from: data)
     }
 

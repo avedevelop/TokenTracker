@@ -153,6 +153,193 @@ struct SettingsView: View {
             }
         }
         .animation(.spring(duration: 0.25), value: showAddAccount)
+        .overlay {
+            if let profile = refreshingTokenProfile {
+                ZStack {
+                    Color.black.opacity(0.55)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(duration: 0.25)) { refreshingTokenProfile = nil }
+                            refreshTokenInput = ""; refreshTokenError = nil
+                        }
+
+                    VStack(spacing: 0) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(L10n.s("Обновить токен", "Refresh token"))
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.white.opacity(0.7))
+                                Text(profile.displayName)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.white.opacity(0.35))
+                            }
+                            Spacer()
+                            Button {
+                                withAnimation(.spring(duration: 0.25)) { refreshingTokenProfile = nil }
+                                refreshTokenInput = ""; refreshTokenError = nil
+                            } label: {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.45))
+                                    .frame(width: 22, height: 22)
+                                    .background(.white.opacity(0.08), in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 18)
+                        .padding(.bottom, 14)
+
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(L10n.s(
+                                "Вставьте свежий sessionKey из DevTools\nclaude.ai → Cmd+Option+I → Application → Cookies",
+                                "Paste a fresh sessionKey from DevTools\nclaude.ai → Cmd+Option+I → Application → Cookies"
+                            ))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.white.opacity(0.35))
+                            .lineSpacing(2)
+
+                            SecureField("sk-ant-sid02-...", text: $refreshTokenInput)
+                                .textFieldStyle(.plain)
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundStyle(.white)
+                                .padding(10)
+                                .background(RoundedRectangle(cornerRadius: 9)
+                                    .fill(.white.opacity(0.06))
+                                    .overlay(RoundedRectangle(cornerRadius: 9)
+                                        .strokeBorder(refreshTokenError != nil ? Color.red.opacity(0.5) : .white.opacity(0.12), lineWidth: 0.5)))
+                                .background(
+                                    Button("") {
+                                        if let s = NSPasteboard.general.string(forType: .string) {
+                                            refreshTokenInput = s.trimmingCharacters(in: .whitespacesAndNewlines)
+                                            refreshTokenError = nil
+                                        }
+                                    }
+                                    .keyboardShortcut("v", modifiers: .command)
+                                    .opacity(0)
+                                )
+
+                            if let err = refreshTokenError {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.red.opacity(0.8))
+                                    Text(err)
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.red.opacity(0.8))
+                                }
+                            }
+
+                            HStack {
+                                Spacer()
+                                Button {
+                                    Task { await performTokenRefresh(for: profile) }
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        if refreshTokenValidating {
+                                            ProgressView().controlSize(.mini).tint(.white)
+                                        }
+                                        Text(refreshTokenValidating
+                                             ? L10n.s("Проверка…", "Checking…")
+                                             : L10n.s("Сохранить", "Save"))
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundStyle(refreshTokenInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .white.opacity(0.3) : .white)
+                                    }
+                                    .padding(.horizontal, 16).padding(.vertical, 8)
+                                    .background(RoundedRectangle(cornerRadius: 9)
+                                        .fill(.white.opacity(refreshTokenInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.05 : 0.12))
+                                        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(.white.opacity(0.15), lineWidth: 0.5)))
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(refreshTokenInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || refreshTokenValidating)
+                            }
+                        }
+                        .padding(20)
+                    }
+                    .background(Color(red: 0.11, green: 0.09, blue: 0.17))
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(.white.opacity(0.1), lineWidth: 0.5))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 60)
+                    .shadow(color: .black.opacity(0.5), radius: 30, y: 10)
+                }
+                .environment(\.colorScheme, .dark)
+                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .center)))
+            }
+        }
+        .animation(.spring(duration: 0.25), value: refreshingTokenProfile == nil)
+    }
+
+    // MARK: - Token Refresh
+
+    private func performTokenRefresh(for profile: AccountProfile) async {
+        let token = refreshTokenInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else { return }
+        await MainActor.run { refreshTokenValidating = true; refreshTokenError = nil }
+
+        do {
+            let poller = LimitsPoller()
+            let limits: UsageData.Limits
+            // Always discover orgId fresh — the stored one may belong to a different account.
+            // e.g. user logs into account B in incognito and copies its sessionKey into account A's refresh form.
+            if token.hasPrefix("sk-ant-oat") {
+                limits = try await poller.fetchLimitsWithOAuthToken(token)
+            } else {
+                let freshOrgId = await poller.fetchOrgIdFromAPI(auth: .cookie(token))
+                if let freshOrgId, !freshOrgId.isEmpty {
+                    limits = try await poller.fetchLimits(sessionKey: token, orgId: freshOrgId)
+                    // Persist the newly discovered orgId if it changed
+                    if freshOrgId != profile.orgId {
+                        await accountStore.updateOrgId(freshOrgId, for: profile.id)
+                    }
+                } else {
+                    // org discovery failed — token may be for a free account (no org)
+                    limits = try await poller.fetchLimits(sessionKey: token)
+                }
+            }
+            try? accountStore.updateToken(token, for: profile.id)
+            accountStore.markTokenStatus(id: profile.id, valid: true)
+            if accountStore.activeId == profile.id {
+                try? SharedStore.updateLimits(limits)
+                orchestrator.onLoginSuccess()
+            }
+            await MainActor.run {
+                refreshTokenValidating = false
+                withAnimation(.spring(duration: 0.25)) { refreshingTokenProfile = nil }
+                refreshTokenInput = ""; refreshTokenError = nil
+            }
+        } catch LimitsPoller.PollerError.unauthorized {
+            await MainActor.run {
+                refreshTokenValidating = false
+                refreshTokenError = L10n.s("Токен недействителен или истёк", "Token is invalid or expired")
+            }
+        } catch LimitsPoller.PollerError.missingOrgId {
+            // Token valid but org ID needed — accept it anyway, mark valid, orgId can be set separately
+            try? accountStore.updateToken(token, for: profile.id)
+            accountStore.markTokenStatus(id: profile.id, valid: true)
+            if accountStore.activeId == profile.id { orchestrator.onLoginSuccess() }
+            await MainActor.run {
+                refreshTokenValidating = false
+                withAnimation(.spring(duration: 0.25)) { refreshingTokenProfile = nil }
+                refreshTokenInput = ""; refreshTokenError = nil
+            }
+        } catch LimitsPoller.PollerError.unexpectedResponse {
+            try? accountStore.updateToken(token, for: profile.id)
+            accountStore.markTokenStatus(id: profile.id, valid: true)
+            if accountStore.activeId == profile.id { orchestrator.onLoginSuccess() }
+            await MainActor.run {
+                refreshTokenValidating = false
+                withAnimation(.spring(duration: 0.25)) { refreshingTokenProfile = nil }
+                refreshTokenInput = ""; refreshTokenError = nil
+            }
+        } catch {
+            await MainActor.run {
+                refreshTokenValidating = false
+                refreshTokenError = L10n.s("Ошибка сети. Проверьте интернет.", "Network error. Check your connection.")
+            }
+        }
     }
 
     // MARK: - Header
@@ -415,6 +602,10 @@ struct SettingsView: View {
     @FocusState private var orgIdFieldFocused: Bool
     @ObservedObject private var accountStore = AccountStore.shared
     @State private var showAddAccount = false
+    @State private var refreshingTokenProfile: AccountProfile? = nil
+    @State private var refreshTokenInput = ""
+    @State private var refreshTokenValidating = false
+    @State private var refreshTokenError: String? = nil
 
     private var accountTab: some View {
         Group {
@@ -466,6 +657,22 @@ struct SettingsView: View {
                                 Spacer()
 
                                 HStack(spacing: 6) {
+                                    if !profile.tokenValid {
+                                        Button {
+                                            refreshTokenInput = ""
+                                            refreshTokenError = nil
+                                            refreshingTokenProfile = profile
+                                        } label: {
+                                            Image(systemName: "arrow.clockwise")
+                                                .font(.system(size: 10, weight: .medium))
+                                                .foregroundStyle(.orange.opacity(0.85))
+                                                .frame(width: 28, height: 22)
+                                                .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help(L10n.s("Обновить токен", "Refresh token"))
+                                    }
+
                                     if !isActive {
                                         Button { orchestrator.switchAccount(profile) } label: {
                                             Image(systemName: "arrow.left.arrow.right")

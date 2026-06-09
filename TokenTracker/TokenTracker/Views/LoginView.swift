@@ -11,6 +11,7 @@ struct LoginView: View {
     @State private var error: String? = nil
     @State private var orgIdInput = ""
     @State private var showToken = false
+    @State private var pendingToken = ""
 
     enum Step { case intro, paste, orgId }
 
@@ -312,7 +313,14 @@ struct LoginView: View {
         error = nil
 
         Task {
-            guard let token = AccountStore.shared.activeToken() ?? KeychainStore.load() else {
+            // When adding via sheet, use the token we validated earlier (pendingToken).
+            // For the initial login flow, fall back to the already-active account's token.
+            let token: String
+            if isSheet && !pendingToken.isEmpty {
+                token = pendingToken
+            } else if let t = AccountStore.shared.activeToken() ?? KeychainStore.load() {
+                token = t
+            } else {
                 await MainActor.run { isValidating = false; step = .paste }
                 return
             }
@@ -320,9 +328,15 @@ struct LoginView: View {
                 let poller = LimitsPoller()
                 let limits = token.hasPrefix("sk-ant-oat")
                     ? try await poller.fetchLimitsWithOAuthToken(token)
-                    : try await poller.fetchLimits(sessionKey: token)
-                // Save org ID only after successful validation
+                    : try await poller.fetchLimits(sessionKey: token, orgId: orgId)
+                // Validation succeeded — now it's safe to commit the new profile
+                if isSheet && !pendingToken.isEmpty {
+                    await AccountStore.shared.addNewProfile(token: token)
+                }
                 UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
+                if let id = AccountStore.shared.activeId {
+                    await AccountStore.shared.updateOrgId(orgId, for: id)
+                }
                 try? SharedStore.updateLimits(limits)
                 await MainActor.run { isValidating = false; onLoginSuccess() }
             } catch {
@@ -347,8 +361,11 @@ struct LoginView: View {
         Task {
             do {
                 let poller = LimitsPoller()
-                // Clear cached orgId to force fresh lookup with new token
-                UserDefaults.standard.removeObject(forKey: "com.tokentracker.orgId")
+                // Clear cached orgId only for initial login — not when adding a second account
+                // (isSheet = true) since that would corrupt the active account's org ID.
+                if !isSheet {
+                    UserDefaults.standard.removeObject(forKey: "com.tokentracker.orgId")
+                }
                 let limits = token.hasPrefix("sk-ant-oat")
                     ? try await poller.fetchLimitsWithOAuthToken(token)
                     : try await poller.fetchLimits(sessionKey: token)
@@ -371,7 +388,9 @@ struct LoginView: View {
                 }
             } catch LimitsPoller.PollerError.missingOrgId {
                 if isSheet {
-                    await AccountStore.shared.addNewProfile(token: token)
+                    // Don't create the profile yet — wait until orgId is confirmed.
+                    // pendingToken is read by saveOrgId() to commit the profile only after success.
+                    await MainActor.run { pendingToken = token }
                 } else {
                     await AccountStore.shared.ensureProfile(token: token)
                 }

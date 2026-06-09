@@ -19,8 +19,9 @@ final class AppOrchestrator: ObservableObject {
     func start() {
         server.start()
         checkIfJustUpdated()
-        isLoggedIn = AccountStore.shared.activeToken() != nil
-        // Ensure UserDefaults orgId matches the active profile's orgId on every launch
+        // isLoggedIn = has accounts, regardless of whether tokens are still valid.
+        // Expired tokens mark tokenExpired = true but don't kick the user out.
+        isLoggedIn = !AccountStore.shared.profiles.isEmpty
         if let orgId = AccountStore.shared.activeProfile?.orgId, !orgId.isEmpty {
             UserDefaults.standard.set(orgId, forKey: "com.tokentracker.orgId")
         }
@@ -28,7 +29,7 @@ final class AppOrchestrator: ObservableObject {
         refreshTokenUsage()
         Task { await checkForUpdates() }
         Task { await NotificationManager.shared.requestPermission() }
-        if isLoggedIn {
+        if AccountStore.shared.activeToken() != nil {
             startLimitsPolling()
             pollLimitsNow()
             pollInactiveAccountsLimits()
@@ -94,7 +95,7 @@ final class AppOrchestrator: ObservableObject {
         if let profile = AccountStore.shared.activeProfile {
             AccountStore.shared.remove(profile)
         }
-        isLoggedIn = false
+        isLoggedIn = !AccountStore.shared.profiles.isEmpty
         limitsTimer?.invalidate()
         limitsTimer = nil
         var stored = SharedStore.read()
@@ -231,6 +232,7 @@ final class AppOrchestrator: ObservableObject {
     }
 
     private func pollLimitsNow() {
+        guard !tokenExpired else { return }
         guard let token = AccountStore.shared.activeToken() else { return }
         Task {
             do {
@@ -247,8 +249,18 @@ final class AppOrchestrator: ObservableObject {
                 }
             } catch LimitsPoller.PollerError.unauthorized {
                 await MainActor.run {
-                    self.isLoggedIn = false
-                    self.tokenExpired = true
+                    if let id = AccountStore.shared.activeId {
+                        AccountStore.shared.markTokenStatus(id: id, valid: false)
+                    }
+                    // Switch to another valid account if available
+                    if let fallback = AccountStore.shared.profiles.first(where: {
+                        $0.id != AccountStore.shared.activeId && $0.tokenValid
+                    }) {
+                        self.switchAccount(fallback)
+                    } else {
+                        // No valid accounts — mark expired but keep app accessible
+                        self.tokenExpired = true
+                    }
                 }
             } catch {
                 // Network failure — keep last known limits

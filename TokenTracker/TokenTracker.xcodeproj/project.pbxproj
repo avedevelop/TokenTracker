@@ -13,6 +13,7 @@
 		87FAF55D2FB8CA4B008298BD /* TokenTrackerWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 87FAF54D2FB8CA49008298BD /* TokenTrackerWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		AA1234560000000000000001 /* UsageData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1234560000000000000000 /* UsageData.swift */; };
 		AA1234560000000000000005 /* SharedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1234560000000000000004 /* SharedStore.swift */; };
+		AA123456000000000000000A /* CloudflareBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1234560000000000000009 /* CloudflareBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +57,7 @@
 		AA1234560000000000000000 /* UsageData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageData.swift; sourceTree = "<group>"; };
 		AA1234560000000000000004 /* SharedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStore.swift; sourceTree = "<group>"; };
 		AA1234560000000000000007 /* LocalServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalServer.swift; sourceTree = "<group>"; };
+		AA1234560000000000000009 /* CloudflareBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudflareBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -164,6 +166,7 @@
 			children = (
 				AA1234560000000000000004 /* SharedStore.swift */,
 				AA1234560000000000000007 /* LocalServer.swift */,
+				AA1234560000000000000009 /* CloudflareBridge.swift */,
 			);
 			name = Data;
 			path = TokenTracker/Data;
@@ -326,6 +329,7 @@
 			files = (
 				AA1234560000000000000001 /* UsageData.swift in Sources */,
 				AA1234560000000000000005 /* SharedStore.swift in Sources */,
+				AA123456000000000000000A /* CloudflareBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -503,7 +507,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tokentracker.TokenTracker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -546,7 +550,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tokentracker.TokenTracker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -589,7 +593,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tokentracker.TokenTracker.TokenTrackerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -632,7 +636,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tokentracker.TokenTracker.TokenTrackerWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -652,7 +656,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tokentracker.TokenTracker.TokenTrackerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -672,7 +676,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.4.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tokentracker.TokenTracker.TokenTrackerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;

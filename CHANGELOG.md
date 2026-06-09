@@ -4,6 +4,29 @@ All notable changes to TokenTracker are documented here.
 
 ---
 
+## v1.4.1 — June 2026
+
+### Fixed
+
+- **Cloudflare bot protection blocking all API requests** — Anthropic added Cloudflare Managed Challenge to claude.ai, which requires JavaScript execution and a browser-like TLS fingerprint. All `URLSession`-based requests were returning HTTP 403 "Just a moment…" instead of data, making it impossible to validate session tokens or fetch usage limits. Fixed by routing all claude.ai API calls through a hidden `WKWebView` that runs offscreen in a real `NSWindow`, so Cloudflare challenges are solved natively by WebKit.
+
+- **Session token refresh showing "Token invalid" for valid tokens** — When updating an expired token, org ID discovery hit `/api/organizations` which returns `{"id": 242540623, "uuid": "ecaaf65e-..."}`. The code read `"id" as? String` — silently nil because the field is an integer — then fell back to the old mismatched org ID, causing 403 "Invalid authorization for organization". Fixed by reading the `"uuid"` field instead.
+
+- **Background polling interfering with token refresh** — After a token expired, the 60-second polling timer kept firing with the expired token and overwriting the bridge session mid-refresh. Fixed by skipping `pollLimitsNow()` when `tokenExpired = true`.
+
+- **App forcing blank login screen when any token expires** — If the active account's token was rejected, the app set `isLoggedIn = false` and showed the empty login screen, hiding all existing accounts and all history. Fixed: `isLoggedIn` now reflects whether any account profiles exist. Expired tokens show a per-account ↻ badge; the blank login screen only appears when there are zero profiles.
+
+- **Adding a second account switching away from a working account** — When adding an account and the token returned `missingOrgId`, `addNewProfile()` immediately switched the active account to the unvalidated new profile. On the next poll it failed auth → `isLoggedIn = false`. Fixed: profile creation is now deferred until org ID is confirmed.
+
+- **Org ID wiped during add-account validation** — The token validate flow unconditionally cleared `com.tokentracker.orgId` even when adding a second account via the sheet, potentially corrupting the active account's org ID lookup. Fixed: the clear only runs for initial single-account login.
+
+### Improved
+
+- History, dashboard, and all local usage data remain accessible when tokens are expired — the app no longer blocks access to cached data.
+- Per-account ↻ button in the Accounts tab lets users refresh an expired token without touching other accounts.
+
+---
+
 ## v1.4.0 — June 2026
 
 ### New features
