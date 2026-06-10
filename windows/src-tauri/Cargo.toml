@@ -1,7 +1,7 @@
 [package]
 name = "tokentracker"
 version = "0.1.0"
-description = "A Tauri App"
+description = "TokenTracker for Windows — Claude AI usage tracker"
 authors = ["bvsmma"]
 edition = "2021"
 
@@ -19,7 +19,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4.45", features = ["serde"] }

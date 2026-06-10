@@ -151,6 +151,15 @@ impl AccountsManager {
         }
     }
 
+    /// Update the vault token for an existing account (e.g. refreshed OAuth token).
+    pub fn update_token(&mut self, id: Uuid, token: String) -> Result<(), String> {
+        if !self.manifest.profiles.iter().any(|p| p.id == id) {
+            return Err(format!("account {id} not found"));
+        }
+        self.tokens.insert(id, token);
+        write_tokens(self.vault.as_ref(), &self.tokens)
+    }
+
     fn persist(&self) {
         if let Ok(json) = serde_json::to_string_pretty(&self.manifest) {
             let _ = fs::write(&self.file, json);
@@ -211,5 +220,24 @@ mod tests {
         m.update_info(p.id, Some("a@b.c".into()), None, true);
         assert_eq!(m.profiles()[0].name, "a@b.c");
         assert_eq!(m.profiles()[0].email.as_deref(), Some("a@b.c"));
+    }
+
+    #[test]
+    fn update_token_replaces_vault_entry() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut m = store(tmp.path());
+        let p = m.add("Claude Code".into(), "o".into(), "old-token".into(), AuthKind::Bearer).unwrap();
+        assert_eq!(m.token_for(p.id).as_deref(), Some("old-token"));
+        m.update_token(p.id, "new-token".into()).unwrap();
+        // In-memory map is updated immediately
+        assert_eq!(m.token_for(p.id).as_deref(), Some("new-token"));
+    }
+
+    #[test]
+    fn update_token_errors_on_missing_account() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut m = store(tmp.path());
+        let unknown = Uuid::new_v4();
+        assert!(m.update_token(unknown, "tok".into()).is_err());
     }
 }

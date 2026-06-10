@@ -175,6 +175,13 @@ fn apply_active_limits(app: &AppHandle) {
     if let Some(l) = limits {
         usage.limits = Some(l);
         usage.limits_updated_at = Some(Local::now().to_rfc3339());
+    } else {
+        // No active account or no cached entry for it — clear stale limits so the
+        // UI doesn't show data that belongs to a different (or removed) account.
+        // Network errors for the *same* account keep the old cache entry upstream,
+        // so this only fires when the cache is genuinely empty for that account.
+        usage.limits = None;
+        usage.limits_updated_at = None;
     }
 }
 
@@ -327,7 +334,15 @@ pub fn get_settings(state: State<AppState>) -> Settings {
 }
 
 #[tauri::command]
-pub fn set_settings(app: AppHandle, state: State<AppState>, settings: Settings) {
+pub fn set_settings(app: AppHandle, state: State<AppState>, mut settings: Settings) {
+    // Preserve runtime anti-spam markers so a UI save can't reset notification state.
+    {
+        let cur = state.settings.lock().unwrap();
+        settings.last_notified_5h = cur.last_notified_5h;
+        settings.last_notified_weekly = cur.last_notified_weekly;
+        settings.budget_notified_today = cur.budget_notified_today.clone();
+        settings.budget_notified_month = cur.budget_notified_month.clone();
+    }
     *state.settings.lock().unwrap() = settings;
     state.save_settings();
     let _ = app.emit("settings-updated", ());
@@ -381,10 +396,24 @@ pub async fn claude_code_autologin(app: AppHandle) -> Result<Option<AccountProfi
     let info = limits_api::fetch_user_info(&client, &auth).await;
     let profile = {
         let mut accounts = state.accounts.lock().unwrap();
-        let p = accounts.add("Claude Code".into(), org_id, token, AuthKind::Bearer)?;
-        accounts.update_info(p.id, info.email, info.full_name, true);
-        accounts.set_active(p.id);
-        accounts.profiles().iter().find(|x| x.id == p.id).unwrap().clone()
+        // Deduplicate: if a Bearer "Claude Code" profile already exists, update its
+        // token instead of adding a duplicate entry.
+        let existing_id = accounts
+            .profiles()
+            .iter()
+            .find(|p| p.auth == AuthKind::Bearer && p.name == "Claude Code")
+            .map(|p| p.id);
+        if let Some(id) = existing_id {
+            accounts.update_token(id, token)?;
+            accounts.update_info(id, info.email, info.full_name, true);
+            accounts.set_active(id);
+            accounts.profiles().iter().find(|x| x.id == id).unwrap().clone()
+        } else {
+            let p = accounts.add("Claude Code".into(), org_id, token, AuthKind::Bearer)?;
+            accounts.update_info(p.id, info.email, info.full_name, true);
+            accounts.set_active(p.id);
+            accounts.profiles().iter().find(|x| x.id == p.id).unwrap().clone()
+        }
     };
     poll_limits_once(app.clone()).await;
     Ok(Some(profile))

@@ -55,8 +55,8 @@ const STRINGS = {
   "settings.updateFound": ["Доступна версия", "Update available:"],
   "onb.title": ["Добро пожаловать в TokenTracker", "Welcome to TokenTracker"],
   "onb.body": [
-    "Приложение читает локальные данные Claude Code и показывает ваши лимиты, стоимость и историю. Без облака и телеметрии.",
-    "The app reads local Claude Code data and shows your limits, costs, and history. No cloud, no telemetry.",
+    "Приложение читает локальные данные Claude Code и показывает ваши лимиты, стоимость и историю. Без облака и телеметрии. Приложение будет запускаться при входе в систему — это можно выключить в настройках.",
+    "The app reads local Claude Code data and shows your limits, costs, and history. No cloud, no telemetry. The app will launch at sign-in — you can turn this off in Settings.",
   ],
   "onb.start": ["Начать", "Get started"],
   "common.updatedAgo": ["обновлено", "updated"],
