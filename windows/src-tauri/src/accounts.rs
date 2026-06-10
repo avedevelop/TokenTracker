@@ -102,7 +102,9 @@ impl AccountsManager {
 
     pub fn remove(&mut self, id: Uuid) {
         self.tokens.remove(&id);
-        let _ = write_tokens(self.vault.as_ref(), &self.tokens);
+        if let Err(e) = write_tokens(self.vault.as_ref(), &self.tokens) {
+            eprintln!("tokentracker: failed to update token vault on remove: {e}");
+        }
         self.manifest.profiles.retain(|p| p.id != id);
         if self.manifest.active_id == Some(id) {
             self.manifest.active_id = self.manifest.profiles.first().map(|p| p.id);
