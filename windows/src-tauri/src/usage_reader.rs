@@ -49,7 +49,8 @@ pub fn read_today_usage(projects_dir: &Path) -> UsageData {
         .and_hms_opt(0, 0, 0)
         .unwrap()
         .and_local_timezone(Local)
-        .unwrap();
+        .earliest()
+        .unwrap_or_else(Local::now);
 
     let mut total_input: u64 = 0;
     let mut total_output: u64 = 0;
@@ -226,5 +227,24 @@ mod tests {
     fn friendly_name_takes_last_dash_part() {
         assert_eq!(friendly_project_name("-Users-vlad-dev-my-project"), "project");
         assert_eq!(friendly_project_name("plain"), "plain");
+    }
+
+    #[test]
+    fn skips_files_not_modified_today() {
+        let tmp = tempfile::tempdir().unwrap();
+        let proj = tmp.path().join("-Users-vlad-dev-old-proj");
+        fs::create_dir_all(&proj).unwrap();
+        let now = Local::now();
+        let today_ts = now.to_rfc3339();
+        let path = proj.join("old.jsonl");
+        // file contains a TODAY entry, but the file's mtime is 2 days old → must be skipped entirely
+        fs::write(&path, entry(&today_ts, "s9", 500, 500, 0, 0)).unwrap();
+        let two_days_ago = std::time::SystemTime::now() - std::time::Duration::from_secs(48 * 3600);
+        let f = fs::OpenOptions::new().write(true).open(&path).unwrap();
+        f.set_modified(two_days_ago).unwrap();
+        drop(f);
+
+        let usage = read_today_usage(tmp.path());
+        assert_eq!(usage.tokens_today, 0);
     }
 }
