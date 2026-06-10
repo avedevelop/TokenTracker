@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { formatCost, formatTokens, countdown } from "../format";
+import { esc, formatCost, formatTokens, countdown } from "../format";
 
 describe("format", () => {
+  it("escapes html", () => {
+    expect(esc(`<img src=x onerror=alert(1)>&"'`)).toBe(
+      "&lt;img src=x onerror=alert(1)&gt;&amp;&quot;&#39;"
+    );
+  });
+
   it("formats tokens with K/M suffix", () => {
     expect(formatTokens(0)).toBe("0");
     expect(formatTokens(950)).toBe("950");

@@ -18,6 +18,7 @@ export interface Ctx {
 type Tab = "dashboard" | "history" | "account" | "settings";
 let tab: Tab = "dashboard";
 let ctx: Ctx;
+let renderSeq = 0;
 
 function applyTheme(s: Settings) {
   const sys = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
@@ -38,6 +39,7 @@ function renderTabbar() {
 }
 
 function render() {
+  const seq = ++renderSeq;
   const view = document.getElementById("view")!;
   if (!ctx.settings.onboardingDone) {
     document.getElementById("tabbar")!.innerHTML = "";
@@ -47,8 +49,8 @@ function render() {
   renderTabbar();
   view.innerHTML = "";
   if (tab === "dashboard") renderDashboard(view, ctx);
-  else if (tab === "history") void renderHistory(view, ctx);
-  else if (tab === "account") void renderAccount(view, ctx);
+  else if (tab === "history") void renderHistory(view, ctx, () => seq === renderSeq);
+  else if (tab === "account") void renderAccount(view, ctx, () => seq === renderSeq);
   else renderSettings(view, ctx);
 }
 

@@ -1,4 +1,5 @@
 import { api, type AccountProfile } from "../api";
+import { esc } from "../format";
 import type { Ctx } from "../main";
 
 function initials(p: AccountProfile): string {
@@ -8,23 +9,24 @@ function initials(p: AccountProfile): string {
   return src.slice(0, 2).toUpperCase();
 }
 
-export async function renderAccount(el: HTMLElement, ctx: Ctx) {
+export async function renderAccount(el: HTMLElement, ctx: Ctx, isCurrent: () => boolean = () => true) {
   const { t } = ctx;
   const view = await api.getAccounts();
+  if (!isCurrent()) return;
 
   const rows = view.profiles
     .map((p) => {
       const active = p.id === view.activeId;
-      return `<div class="row" data-id="${p.id}">
+      return `<div class="row" data-id="${esc(p.id)}">
         <div style="display:flex;gap:8px;align-items:center">
-          <div class="avatar">${initials(p)}</div>
+          <div class="avatar">${esc(initials(p))}</div>
           <div>
-            <div>${p.fullName ?? p.email ?? p.name}</div>
+            <div>${esc(p.fullName ?? p.email ?? p.name)}</div>
             <div class="muted">${active ? t("account.active") : ""}
               ${p.tokenValid ? "" : `<span class="error">${t("account.invalid")}</span>`}</div>
           </div>
         </div>
-        <button class="ghost" style="width:auto" data-remove="${p.id}">✕</button>
+        <button class="ghost" style="width:auto" data-remove="${esc(p.id)}" aria-label="${esc(t("account.remove"))}">✕</button>
       </div>`;
     })
     .join("");
@@ -37,7 +39,7 @@ export async function renderAccount(el: HTMLElement, ctx: Ctx) {
       <h3>${t("account.add")}</h3>
       ${canAdd ? `
         <div class="field">
-          <input type="password" id="session-key" placeholder="sessionKey" />
+          <input type="password" id="session-key" placeholder="${esc(t("account.sessionKey"))}" />
           <p class="muted" style="margin-top:4px">${t("account.howTo")}</p>
         </div>
         <button class="primary" id="add">${t("account.add")}</button>

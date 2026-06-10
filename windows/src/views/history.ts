@@ -4,9 +4,10 @@ import type { Ctx } from "../main";
 
 let range: 7 | 30 | 90 = 7;
 
-export async function renderHistory(el: HTMLElement, ctx: Ctx) {
+export async function renderHistory(el: HTMLElement, ctx: Ctx, isCurrent: () => boolean = () => true) {
   const { t } = ctx;
   const all = await api.getHistory();
+  if (!isCurrent()) return;
   const records = all.slice(-range);
 
   const max = Math.max(0.01, ...records.map((r) => r.cost));

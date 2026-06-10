@@ -1,5 +1,5 @@
 import type { Ctx } from "../main";
-import { countdown, formatCost, formatTokens } from "../format";
+import { countdown, esc, formatCost, formatTokens } from "../format";
 
 function ring(pct: number, label: string, reset: string): string {
   const r = 30, c = 2 * Math.PI * r;
@@ -39,7 +39,7 @@ export function renderDashboard(el: HTMLElement, ctx: Ctx) {
 
   const projects = usage.topProjects
     .map(
-      (p) => `<div class="row"><span>${p.name}</span>
+      (p) => `<div class="row"><span>${esc(p.name)}</span>
         <span class="muted">${formatTokens(p.tokens)} · ${formatCost(p.cost)}</span></div>`
     )
     .join("");
