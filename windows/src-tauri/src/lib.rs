@@ -8,6 +8,8 @@ pub mod credentials;
 pub mod limits_api;
 pub mod accounts;
 pub mod csv_export;
+pub mod orchestrator;
+pub mod tray;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
