@@ -1,6 +1,15 @@
 {
-  "version": "0.0.0",
-  "notes": "placeholder — overwritten by CI on first Windows release",
-  "pub_date": "2026-06-10T00:00:00Z",
-  "platforms": {}
+  "version": "0.1.0",
+  "notes": "",
+  "pub_date": "2026-06-10T13:43:53.220Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZk1zL2xONUN1U296a2ZVS0N1c0FMd05NQ2d3VEJwdHRkdHQrTlBDSk41NlJpOHJmOWV0VngySUNnbzIzeUVsTms1WjZEYVZSdG51eExHd3hDa3U2K0VZS1A3TmFBaXdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMDk5MDI5CWZpbGU6VG9rZW5UcmFja2VyXzAuMS4wX3g2NC1zZXR1cC5leGUKcXNzSlkwa1VFRFBzQ0RQU252SWxEUXUzNWkxRDU0dDkvUzBTY0JEeWhEa2RUU2U3aVJmSWVTc0FVYURMM3NXR2hkUFFqRVBidTVLQXErZVIwdTY5QkE9PQo=",
+      "url": "https://github.com/avedevelop/TokenTracker/releases/download/win-v0.1.0/TokenTracker_0.1.0_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSZk1zL2xONUN1U296a2ZVS0N1c0FMd05NQ2d3VEJwdHRkdHQrTlBDSk41NlJpOHJmOWV0VngySUNnbzIzeUVsTms1WjZEYVZSdG51eExHd3hDa3U2K0VZS1A3TmFBaXdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgxMDk5MDI5CWZpbGU6VG9rZW5UcmFja2VyXzAuMS4wX3g2NC1zZXR1cC5leGUKcXNzSlkwa1VFRFBzQ0RQU252SWxEUXUzNWkxRDU0dDkvUzBTY0JEeWhEa2RUU2U3aVJmSWVTc0FVYURMM3NXR2hkUFFqRVBidTVLQXErZVIwdTY5QkE9PQo=",
+      "url": "https://github.com/avedevelop/TokenTracker/releases/download/win-v0.1.0/TokenTracker_0.1.0_x64-setup.exe"
+    }
+  }
 }
