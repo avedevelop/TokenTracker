@@ -41,7 +41,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRBQUU5MDM3RTVDRjMyNUYKUldSZk1zL2xONUN1U3JsOWVQRFlGS1J1YlNHVHI5dE1nelBkNnRuZFpVU3FwYVczMld0V1NtaHQK",
       "endpoints": [
-        "https://raw.githubusercontent.com/bvsmma/TokenTracker/main/windows/latest.json"
+        "https://raw.githubusercontent.com/avedevelop/TokenTracker/main/windows/latest.json"
       ],
       "windows": { "installMode": "passive" }
     }

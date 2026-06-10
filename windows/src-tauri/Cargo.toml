@@ -2,7 +2,7 @@
 name = "tokentracker"
 version = "0.1.0"
 description = "TokenTracker for Windows — Claude AI usage tracker"
-authors = ["bvsmma"]
+authors = ["avedevelop"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

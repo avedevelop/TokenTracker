@@ -108,7 +108,7 @@ In Xcode: select the **TokenTracker** scheme → set your Development Team → `
 ### winget (рекомендуется / recommended)
 
 ```powershell
-winget install bvsmma.TokenTracker
+winget install avedevelop.TokenTracker
 ```
 
 ### Скачать вручную / Download manually
