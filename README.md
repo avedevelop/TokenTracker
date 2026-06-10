@@ -103,6 +103,23 @@ In Xcode: select the **TokenTracker** scheme → set your Development Team → `
 
 ---
 
+## Windows
+
+### winget (рекомендуется / recommended)
+
+```powershell
+winget install bvsmma.TokenTracker
+```
+
+### Скачать вручную / Download manually
+
+Releases → `TokenTracker_x.x.x_x64-setup.exe` (тег / tag `win-vX.X.X`).
+
+**RU:** Виджетов на Windows нет — их заменяет иконка в трее с процентом 5-часового лимита.  
+**EN:** No desktop widgets on Windows — a tray icon with the 5-hour limit percent replaces them.
+
+---
+
 ## Настройка / Setup
 
 ### Данные Claude Code (автоматически / automatic)
