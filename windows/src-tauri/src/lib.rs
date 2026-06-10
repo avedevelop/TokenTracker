@@ -1,5 +1,6 @@
 pub mod models;
 pub mod pricing;
+pub mod usage_reader;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
