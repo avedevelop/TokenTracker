@@ -1,22 +1,85 @@
-import { invoke } from "@tauri-apps/api/core";
+import { api, type Settings, type UsageData } from "./api";
+import { makeT, resolveLang, type Lang } from "./l10n";
+import { renderDashboard } from "./views/dashboard";
+import { renderHistory } from "./views/history";
+import { renderAccount } from "./views/account";
+import { renderSettings } from "./views/settings";
+import { renderOnboarding } from "./views/onboarding";
 
-let greetInputEl: HTMLInputElement | null;
-let greetMsgEl: HTMLElement | null;
+export interface Ctx {
+  t: ReturnType<typeof makeT>;
+  lang: Lang;
+  settings: Settings;
+  usage: UsageData;
+  rerender: () => void;
+  saveSettings: (s: Settings) => Promise<void>;
+}
 
-async function greet() {
-  if (greetMsgEl && greetInputEl) {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsgEl.textContent = await invoke("greet", {
-      name: greetInputEl.value,
-    });
+type Tab = "dashboard" | "history" | "account" | "settings";
+let tab: Tab = "dashboard";
+let ctx: Ctx;
+
+function applyTheme(s: Settings) {
+  const sys = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  document.documentElement.dataset.theme = s.theme === "system" ? sys : s.theme;
+}
+
+function renderTabbar() {
+  const bar = document.getElementById("tabbar")!;
+  const tabs: Tab[] = ["dashboard", "history", "account", "settings"];
+  bar.innerHTML = "";
+  for (const name of tabs) {
+    const b = document.createElement("button");
+    b.textContent = ctx.t(`tab.${name}` as never);
+    b.className = name === tab ? "active" : "";
+    b.onclick = () => { tab = name; render(); };
+    bar.appendChild(b);
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
-  greetInputEl = document.querySelector("#greet-input");
-  greetMsgEl = document.querySelector("#greet-msg");
-  document.querySelector("#greet-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    greet();
+function render() {
+  const view = document.getElementById("view")!;
+  if (!ctx.settings.onboardingDone) {
+    document.getElementById("tabbar")!.innerHTML = "";
+    renderOnboarding(view, ctx);
+    return;
+  }
+  renderTabbar();
+  view.innerHTML = "";
+  if (tab === "dashboard") renderDashboard(view, ctx);
+  else if (tab === "history") void renderHistory(view, ctx);
+  else if (tab === "account") void renderAccount(view, ctx);
+  else renderSettings(view, ctx);
+}
+
+async function boot() {
+  const settings = await api.getSettings();
+  const usage = await api.getUsage();
+  const lang = resolveLang(settings.language, navigator.language);
+  ctx = {
+    t: makeT(lang),
+    lang,
+    settings,
+    usage,
+    rerender: render,
+    saveSettings: async (s) => {
+      ctx.settings = s;
+      await api.setSettings(s);
+      ctx.lang = resolveLang(s.language, navigator.language);
+      ctx.t = makeT(ctx.lang);
+      applyTheme(s);
+      render();
+    },
+  };
+  applyTheme(settings);
+
+  await api.onUsageUpdated((u) => {
+    ctx.usage = u;
+    if (tab === "dashboard") render();
   });
-});
+  await api.onAccountsUpdated(() => { if (tab === "account") render(); });
+
+  render();
+}
+
+boot();
