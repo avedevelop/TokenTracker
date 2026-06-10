@@ -1,0 +1,100 @@
+:root, [data-theme="dark"] {
+  --bg: #0b0c10;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f2f3f5;
+  --text-dim: rgba(242, 243, 245, 0.55);
+  --accent: #d97757;
+  --ok: #4caf7d;
+  --warn: #ffc107;
+  --danger: #ff5252;
+  --ring-track: rgba(255, 255, 255, 0.10);
+}
+[data-theme="light"] {
+  --bg: #f4f4f6;
+  --bg-card: rgba(0, 0, 0, 0.04);
+  --bg-card-hover: rgba(0, 0, 0, 0.07);
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #17181c;
+  --text-dim: rgba(23, 24, 28, 0.55);
+  --ring-track: rgba(0, 0, 0, 0.10);
+}
+
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body {
+  width: 340px; overflow-x: hidden;
+  background: var(--bg); color: var(--text);
+  font: 13px/1.45 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  display: flex; flex-direction: column; user-select: none;
+}
+#view { flex: 1; overflow-y: auto; padding: 14px 14px 6px; }
+
+#tabbar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border); padding: 6px 8px 10px; gap: 4px;
+}
+#tabbar button {
+  background: none; border: 0; color: var(--text-dim); font: inherit;
+  font-size: 11px; padding: 6px 0; border-radius: 8px; cursor: pointer;
+}
+#tabbar button.active { color: var(--accent); background: var(--bg-card); }
+
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px; margin-bottom: 10px;
+}
+.card h3 { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
+
+.rings { display: flex; justify-content: space-around; }
+.ring { text-align: center; }
+.ring svg { transform: rotate(-90deg); }
+.ring .pct { font-size: 17px; font-weight: 700; }
+.ring .label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+.ring .reset { font-size: 10px; color: var(--text-dim); }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat .value { font-size: 16px; font-weight: 700; }
+.stat .label { font-size: 10px; color: var(--text-dim); }
+
+.bars { display: flex; align-items: flex-end; gap: 2px; height: 56px; }
+.bars div { flex: 1; min-height: 2px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: .85; }
+
+.row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.row:last-child { border-bottom: 0; }
+.muted { color: var(--text-dim); font-size: 11px; }
+
+button.primary {
+  width: 100%; padding: 9px; border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--accent); color: #fff; font: inherit; font-weight: 600;
+}
+button.ghost {
+  background: var(--bg-card); color: var(--text); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px; cursor: pointer; font: inherit; width: 100%;
+}
+input[type="text"], input[type="password"], input[type="number"], select {
+  width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text); font: inherit; outline: none;
+}
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.error { color: var(--danger); font-size: 11px; margin-top: 6px; }
+.success { color: var(--ok); font-size: 11px; margin-top: 6px; }
+
+.segment { display: flex; gap: 4px; }
+.segment button {
+  flex: 1; padding: 6px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-dim); cursor: pointer; font: inherit; font-size: 11px;
+}
+.segment button.active { color: var(--text); border-color: var(--accent); }
+
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--accent);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.onboarding { text-align: center; padding-top: 60px; }
+.onboarding h1 { font-size: 18px; margin-bottom: 12px; }
+.onboarding p { color: var(--text-dim); margin-bottom: 24px; }
