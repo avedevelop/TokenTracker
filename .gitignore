@@ -8,3 +8,9 @@ image.png
 test_glass
 .superpowers/
 CLAUDE.md
+
+# Windows port build artifacts
+windows/node_modules/
+windows/dist/
+windows/src-tauri/target/
+windows/src-tauri/gen/

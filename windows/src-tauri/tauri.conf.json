@@ -27,7 +27,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,5 +36,14 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRBQUU5MDM3RTVDRjMyNUYKUldSZk1zL2xONUN1U3JsOWVQRFlGS1J1YlNHVHI5dE1nelBkNnRuZFpVU3FwYVczMld0V1NtaHQK",
+      "endpoints": [
+        "https://raw.githubusercontent.com/bvsmma/TokenTracker/main/windows/latest.json"
+      ],
+      "windows": { "installMode": "passive" }
+    }
   }
 }
