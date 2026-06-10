@@ -3,7 +3,7 @@ import { makeT, resolveLang, type Lang } from "./l10n";
 import { renderDashboard } from "./views/dashboard";
 import { renderHistory } from "./views/history";
 import { renderAccount } from "./views/account";
-import { renderSettings } from "./views/settings";
+import { renderSettings, runUpdateCheck } from "./views/settings";
 import { renderOnboarding } from "./views/onboarding";
 
 export interface Ctx {
@@ -78,6 +78,11 @@ async function boot() {
     if (tab === "dashboard") render();
   });
   await api.onAccountsUpdated(() => { if (tab === "account") render(); });
+  await api.onCheckUpdatesRequested(() => {
+    tab = "settings";
+    render();
+    void runUpdateCheck(document.getElementById("view")!, ctx);
+  });
 
   render();
 }
