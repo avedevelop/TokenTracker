@@ -5,6 +5,7 @@ pub mod history;
 pub mod app_settings;
 pub mod notify_logic;
 pub mod credentials;
+pub mod limits_api;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
